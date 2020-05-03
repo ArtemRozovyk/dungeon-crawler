@@ -1,0 +1,51 @@
+name:                DungeonCrawling
+version:             0.1.0.0
+github:              "ArtemRozovyk/dungeon_crawl-"
+license:             BSD3
+author:              "Rozovyk Artemiy et Quentin Piotrowski"
+maintainer:          "quentin.piotrowski [at] gmail [dot] com && rozovyk [dot] artem [at] gmail [dot] com"
+copyright:           ":TM:"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/ArtemRozovyk/dungeon_crawl-#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- containers
+- text
+- hspec
+
+library:
+  source-dirs: src
+
+executables:
+  DungeonCrawling-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - DungeonCrawling
+
+tests:
+  DungeonCrawling-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - DungeonCrawling
