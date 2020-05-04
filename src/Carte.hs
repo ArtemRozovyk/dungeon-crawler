@@ -159,25 +159,6 @@ carteToFile carte file = do
     writeFile file (show carte)
     return ()
 
-loadBackground :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
-loadBackground rdr path tmap smap = do
-  tmap' <- TM.loadTexture rdr path (TextureId "background") tmap
-  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId "background") (S.mkArea 0 0 640 480)
-  let smap' = SM.addSprite (SpriteId "background") sprite smap
-  return (tmap', smap')
-
-loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
-loadGeneric rdr path tmap smap  = do
-  let name = takeWhile (/= '.') path 
-  let area = (if(name=="background") then (S.mkArea 0 0 480 480) else (S.mkArea 0 0 48 48))
-  tmap' <- TM.loadTexture rdr ("assets/used/"++path) (TextureId name) tmap
-  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId name) area
-  let smap' = SM.addSprite (SpriteId name) sprite smap
-  return (tmap', smap')  
-
-
-
-
 fetchSingleSprite :: Maybe String -> SpriteMap -> Int ->Int -> Sprite
 fetchSingleSprite Nothing _ _ _ = error "should not occur"
 fetchSingleSprite (Just name) smap x y = 

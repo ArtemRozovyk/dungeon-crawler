@@ -37,6 +37,14 @@ toLoad = ["brick_brown.png","closed_door_eo.png",
 tiles = ["X","|","-","E","S","/","\\"]
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
 
+loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
+loadGeneric rdr path tmap smap  = do
+  let name = takeWhile (/= '.') path 
+  let area = (if(name=="background") then (S.mkArea 0 0 480 480) else (S.mkArea 0 0 48 48))
+  tmap' <- TM.loadTexture rdr ("assets/used/"++path) (TextureId name) tmap
+  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId name) area
+  let smap' = SM.addSprite (SpriteId name) sprite smap
+  return (tmap', smap')  
 
 main :: IO ()
 main = do
