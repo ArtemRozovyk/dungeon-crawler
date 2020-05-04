@@ -1,10 +1,46 @@
 module Carte where 
 
+import System.IO
+
 import qualified Data.Map.Strict as M
+import SpriteMap (SpriteMap, SpriteId (..))
+import qualified SpriteMap as SM
+
+import Control.Monad (guard)
+import Control.Concurrent (threadDelay)
+
+import Data.Set (Set)
+import qualified Data.Set as Set
+
+import Data.List (foldl')
+
+import Foreign.C.Types (CInt (..) )
+
+import SDL
+import SDL.Time (time, delay)
+import Linear (V4(..))
+
+import TextureMap (TextureMap, TextureId (..))
+import qualified TextureMap as TM
+
+import Sprite (Sprite)
+import qualified Sprite as S
+
+import SpriteMap (SpriteMap, SpriteId (..))
+import qualified SpriteMap as SM
+
+import Keyboard (Keyboard)
+import qualified Keyboard as K
+
+import qualified Debug.Trace as T
+
+
+
+
 
 data PDirection = NS | EO deriving Eq -- direction d’une porte
 data StatutP = Ouverte | Fermee deriving Eq -- statut d’une porte
-data Case = Normal -- une case vide
+data Case = Empty -- une case vide
     | Porte PDirection StatutP -- une porte ouverte ou fermee
     | Mur -- infranchissable (sauf pour les fantomes ...)
     | Entree -- debut du niveau
@@ -23,7 +59,7 @@ instance Ord Coord where
         else False
 
 instance Show Case where
-    show Normal = " "
+    show Empty = " "
     show Mur = "X"
     show Entree = "E"
     show Sortie = "S"
@@ -48,7 +84,7 @@ instance Show Carte where
 
 readCase :: String -> [(Case, String)]
 readCase [] = []
-readCase (c:xs) | c ==' ' = [(Normal,xs)]
+readCase (c:xs) | c ==' ' = [(Empty,xs)]
                 | c =='X' = [(Mur,xs)]
                 | c =='E' = [(Entree,xs)]
                 | c =='S' = [(Sortie,xs)]
@@ -63,12 +99,12 @@ instance Read Case where
     readsPrec _ = readCase
 
 readAux :: String -> Int -> Int -> [(Coord, Case)] -> (Carte, String)
-readAux [] haut larg cases = (Carte {carteh = haut, cartel = (cx (fst (last cases))) + 1, carte_contenu = M.fromDistinctDescList cases}, []) -- end string
+readAux [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases))) + 1, carte_contenu = M.fromDistinctDescList cases}, []) -- end string
 readAux str line column acc = 
     let result = (reads :: ReadS Case) str in
         if result == []
         then if (head str) == '\n'
-             then readAux (tail str) (line+1) 0 acc     -- saut à la ligne (str sous forme "\nES..")
+             then readAux (tail str) (line+1) 0 acc  
              else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, str)   -- le caractere lu invalide
         else let [(caase , reste)] = result in
             readAux reste line (column+1) ((C column line, caase):acc)    
@@ -106,3 +142,58 @@ exit_acces_prop carte@(Carte larg haut cases) =
              else if isTraversable (x-1) y 
                   then let 
                       -}
+carteFromFile :: FilePath -> IO Carte
+carteFromFile file = do 
+    fd <- openFile file ReadMode
+    str <- hGetContents fd
+    return (read str :: Carte)
+    
+carteFromFileShow :: FilePath -> IO ()
+carteFromFileShow file = do 
+    fd <- openFile file ReadMode
+    str <- hGetContents fd
+    putStrLn str
+
+carteToFile :: Carte -> FilePath -> IO ()
+carteToFile carte file = do 
+    writeFile file (show carte)
+    return ()
+
+loadBackground :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
+loadBackground rdr path tmap smap = do
+  tmap' <- TM.loadTexture rdr path (TextureId "background") tmap
+  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId "background") (S.mkArea 0 0 640 480)
+  let smap' = SM.addSprite (SpriteId "background") sprite smap
+  return (tmap', smap')
+
+loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
+loadGeneric rdr path tmap smap  = do
+  let name = takeWhile (/= '.') path 
+  let area = (if(name=="background") then (S.mkArea 0 0 480 480) else (S.mkArea 0 0 48 48))
+  tmap' <- TM.loadTexture rdr ("assets/used/"++path) (TextureId name) tmap
+  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId name) area
+  let smap' = SM.addSprite (SpriteId name) sprite smap
+  return (tmap', smap')  
+
+
+
+
+fetchSingleSprite :: Maybe String -> SpriteMap -> Int ->Int -> Sprite
+fetchSingleSprite Nothing _ _ _ = error "should not occur"
+fetchSingleSprite (Just name) smap x y = 
+  (S.moveTo (SM.fetchSprite (SpriteId name) smap) (fromIntegral x) (fromIntegral y))
+
+--fetches sprites that are already positionned correctly
+fetchSpritesFromCarte :: Carte ->SpriteMap-> M.Map [Char] [Char] -> [Sprite]
+fetchSpritesFromCarte carte smap mapTiles = 
+  let contentList = M.toList(carte_contenu carte) in do
+    (C x y,caze) <- contentList
+    guard (M.member (show caze) mapTiles)
+    return (fetchSingleSprite (M.lookup (show caze) mapTiles) smap (x*48) (y*48))
+
+{-
+testCarte :: Carte -> [String]
+testCarte carte =  let contentList = M.toList(carte_contenu carte) in do
+    (C x y,caze) <- contentList
+    guard (M.member (show caze) mapTiles)
+    return ( M.findWithDefault "z" (show caze) mapTiles ) -}
