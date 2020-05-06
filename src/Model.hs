@@ -6,7 +6,33 @@ import Data.Set as S
 import Keyboard (Keyboard)
 import System.Random 
 import qualified Keyboard as K
+import Carte
+import Envi
 
+
+
+
+data Ordre = N | S | E | O | U | R deriving Show
+
+
+data Modele = Model {carte :: Carte , 
+  envi :: Envi , 
+  gene :: StdGen , 
+  log :: String , 
+  keyboard :: Keyboard }
+
+
+bouge :: Modele -> Entite -> Coord -> Modele
+bouge = undefined
+
+decide :: [(Int, Ordre)] -> Modele -> Entite -> Modele
+decide = undefined
+
+prevoit_vache :: Modele -> Entite -> [(Int, Ordre)]
+prevoit_vache = undefined
+
+
+{-
 data GameState = GameState { persoX :: Int
                            , persoY :: Int
                            , virusX :: Int
@@ -55,3 +81,6 @@ end_check gs@(GameState px py vx vy sp) =
   if(abs(px-vx)<50 && abs(py-vy)<50)
   then GameState px py (-1) (-1) sp
   else gs
+-}
+
+

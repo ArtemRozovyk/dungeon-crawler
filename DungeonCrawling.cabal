@@ -33,6 +33,8 @@ library
       Sprite
       SpriteMap
       TextureMap
+      Envi
+      State
   other-modules:
       Paths_DungeonCrawling
   hs-source-dirs:

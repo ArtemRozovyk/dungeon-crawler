@@ -2,7 +2,6 @@
 
 module Main where
 import Carte
-
 import Control.Monad (unless,foldM,mapM_)
 import Control.Concurrent (threadDelay)
 import qualified Data.Map.Strict as Mp
@@ -27,14 +26,16 @@ import qualified Keyboard as K
 
 import qualified Debug.Trace as T
 
-import Model (GameState)
+import Model ()
 import qualified Model as M
+
+import State
 
 
 toLoad = ["brick_brown.png","closed_door_eo.png",
     "closed_door_ns.png", "entrance.png","exit.png",
-    "open_door_eo.png","open_door_ns.png"]; 
-tiles = ["X","|","-","E","S","/","\\"]
+    "open_door_eo.png","open_door_ns.png","player.png","monster.png"]; 
+tiles = ["X","|","-","E","S","/","\\","p","m"]
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
 
 loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
@@ -59,15 +60,16 @@ main = do
   --putStrLn (show (carteh carte))
   -- chargement de l'image du fond
   -- initialisation de l'état du jeu
-  gameState <- M.initGameState
+  --gameState <- M.initGameState
   -- initialisation de l'état du clavier
   let kbd = K.createKeyboard
   --putStrLn $ concat $ testCarte carte
   -- lancement de la gameLoop
-  gameLoop 60 renderer tmap smap kbd gameState carte
+  gameLoop 60 renderer tmap smap kbd carte
 
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard -> GameState -> Carte -> IO ()
-gameLoop frameRate renderer tmap smap kbd gameState carte = do
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> IO ()
+gameLoop frameRate renderer tmap smap kbd carte= do
+  gameState <- initGameState carte
   startTime <- time
   events <- pollEvents
   let kbd' = K.handleEvents events kbd
@@ -76,6 +78,8 @@ gameLoop frameRate renderer tmap smap kbd gameState carte = do
   S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
   --- display carte 
   mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte carte smap mapTiles)
+  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromEnv gameState smap mapTiles)
+
   present renderer
   endTime <- time
   let refreshTime = endTime - startTime
@@ -86,6 +90,6 @@ gameLoop frameRate renderer tmap smap kbd gameState carte = do
   -- putStrLn $ "Delta time: " <> (show (deltaTime * 1000)) <> " (ms)"
   -- putStrLn $ "Frame rate: " <> (show (1 / deltaTime)) <> " (frame/s)"
   --- update du game state
-  let gameState' = M.gameStep gameState kbd' deltaTime
-  ---
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' gameState' carte)
+  --let gameState' = M.gameStep gameState kbd' deltaTime
+  
+  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' carte)
