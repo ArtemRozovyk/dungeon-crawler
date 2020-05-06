@@ -56,23 +56,23 @@ getRandom lst gen = let res = randomR (0, (length lst)-1) gen in
      ((lst !! fst res),snd res)
 
 getNRandomAux :: (Eq a) => [a] -> Int-> StdGen-> [a] -> [a] 
-getNRandomAux _ 0 _ acc = acc
-getNRandomAux l n gen acc = 
+getNRandomAux _ 0 gen acc = acc
+getNRandomAux l n gen acc= 
     let (v,g) = getRandom l gen in
         if(v `elem` acc) 
-            then getNRandomAux l n g acc 
-            else getNRandomAux l (n-1) g (v:acc) 
+            then getNRandomAux l n g acc
+            else getNRandomAux l (n-1) g (v:acc)
 
-getNRandom ::(Eq a) => [a] -> Int -> [a] 
-getNRandom l n = if n<= length l then 
-    getNRandomAux l n (mkStdGen 40) []
+getNRandom ::(Eq a) => [a] -> Int -> StdGen-> [a] 
+getNRandom l n gen = if n<= length l then 
+    getNRandomAux l n gen []
     else fail "Out of range"
 
 init_state :: Carte -> StdGen -> Etat             --(Envi, M.Map Int Entite )
 init_state carte gen =
     let entites = [Mob 0 100,Mob 0 100,Mob 0 100] in
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
-    let places = getNRandom  emptyCases (length entites) in
+    let places = getNRandom  emptyCases (length entites) gen in
     let mbs= foldl (\e (c,m) ->  add_entity e c m) (empty_state carte gen) (zip (map (\(c,_)-> c) places) [Mob 0 100,Mob 0 100,Mob 0 100]) in
         let player = [Player 42 100] in
         mbs { envi_tour = Envi $ M.insert (getEntreeCoord carte) player (contenu_envi (envi_tour mbs)),
