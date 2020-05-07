@@ -115,6 +115,17 @@ instance Read Carte where
 getCase :: Carte -> Int -> Int -> Maybe Case
 getCase (Carte _ _ cases) x y = M.lookup (C x y) cases
 
+
+getCase2 :: Carte -> Int -> Int -> Maybe  (Case,Coord)
+getCase2 (Carte _ _ cases) x y = 
+    let res =  M.lookup (C x y) cases in 
+        case res of 
+            Nothing -> Nothing 
+            Just caz -> Just (caz,C x y)
+
+
+
+
 isTraversable :: Carte -> Int -> Int -> Bool
 isTraversable (Carte larg haut cases) x y = 
     case M.lookup (C x y) cases of

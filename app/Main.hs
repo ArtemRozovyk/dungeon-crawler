@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
+
 import Carte
 import Control.Monad (unless,foldM,mapM_)
 import Control.Concurrent (threadDelay)
@@ -28,8 +29,15 @@ import qualified Debug.Trace as T
 
 import Model ()
 import qualified Model as M
-
+import System.Random
 import State
+
+-- 
+{-
+toModel k e@(Tour _ c env g o l)= Model c env g "" k
+ do kart <- carteFromFile "exemple";   s <- initGameState kart ; let toModel k e@(Tour _ c env g o l)= Model c env g "" k in let m = toModel K.createKeyboard  s in  putStrLn $ show $ contenu_envi $envi m ; return () 
+
+-}
 
 
 toLoad = ["brick_brown.png","closed_door_eo.png",
@@ -47,16 +55,18 @@ loadGeneric rdr path tmap smap  = do
   let smap' = SM.addSprite (SpriteId name) sprite smap
   return (tmap', smap')  
 
+
+
+
 main :: IO ()
 main = do
   initializeAll
   carte <-carteFromFile "exemple"
   window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = V2 480 480 }
-  renderer <- createRenderer window (-1) defaultRenderer
+  renderer <- createRenderer window (-1) defaultRenderer 
   (tmap0,smap0) <- (return $ (TM.createTextureMap,SM.createSpriteMap))
   (tmap0',smap0') <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp ) (tmap0,smap0) toLoad
   (tmap, smap) <- loadGeneric renderer "background.jpg" tmap0' smap0'
-
   --putStrLn (show (carteh carte))
   -- chargement de l'image du fond
   -- initialisation de l'état du jeu
@@ -65,11 +75,11 @@ main = do
   let kbd = K.createKeyboard
   --putStrLn $ concat $ testCarte carte
   -- lancement de la gameLoop
-  gameLoop 60 renderer tmap smap kbd carte
-
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> IO ()
-gameLoop frameRate renderer tmap smap kbd carte= do
   gameState <- initGameState carte
+  gameLoop 60 renderer tmap smap kbd carte gameState
+
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> Etat-> IO ()
+gameLoop frameRate renderer tmap smap kbd carte gameState= do
   startTime <- time
   events <- pollEvents
   let kbd' = K.handleEvents events kbd
@@ -89,7 +99,15 @@ gameLoop frameRate renderer tmap smap kbd carte= do
   let deltaTime = endTime - startTime
   -- putStrLn $ "Delta time: " <> (show (deltaTime * 1000)) <> " (ms)"
   -- putStrLn $ "Frame rate: " <> (show (1 / deltaTime)) <> " (frame/s)"
+
+  --putStrLn $ "Time : " <> (show endTime)
+
   --- update du game state
+ 
+  let (gen,_) =split (gen_tour gameState)
+  let (v,_) = randomR (1::Integer,10::Integer ) gen 
+  --putStrLn $ show v
+  let gameState' = etat_tour gameState kbd endTime gen
   --let gameState' = M.gameStep gameState kbd' deltaTime
   
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' carte)
+  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' carte gameState')
