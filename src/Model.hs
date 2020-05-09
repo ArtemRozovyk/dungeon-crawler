@@ -75,7 +75,7 @@ bouge m ent@(Mob id hp st) coord time =
 
 stepMobs ::Modele -> CDouble -> Modele 
 stepMobs m@(Model c e g l k ) time = 
-  let mobs = M.filter (\x -> not $ isPlayer $ head x) (contenu_envi e) in --TODO multiple entit one case
+  let mobs = M.filter (\x -> isMob $ head x) (contenu_envi e) in --TODO multiple entit one case
   M.foldlWithKey (\md crd ent  -> (bouge md (head ent) crd) time) m mobs
 
 stepPlayer ::Modele -> Modele 

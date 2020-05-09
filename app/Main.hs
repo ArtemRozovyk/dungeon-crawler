@@ -42,8 +42,8 @@ toModel k e@(Tour _ c env g o l)= Model c env g "" k
 
 toLoad = ["brick_brown.png","closed_door_eo.png",
     "closed_door_ns.png", "entrance.png","exit.png",
-    "open_door_eo.png","open_door_ns.png","player.png","monster.png"]; 
-tiles = ["X","|","-","E","S","/","\\","p","m"]
+    "open_door_eo.png","open_door_ns.png","player.png","monster.png","chest.png","trap.png"]; 
+tiles = ["X","|","-","E","S","/","\\","p","m","t","T"]
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
 
 loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> CInt-> CInt->  IO (TextureMap, SpriteMap)

@@ -6,16 +6,44 @@ import System.Random
 import Foreign.C.Types (CInt, CDouble (..) )
 
 data Entite = Mob {iden :: Int , pvie :: Int, starting_time :: CDouble  }
-    | Player {iden :: Int, pvie :: Int}
-    deriving (Eq,Show)
+    | Player {iden :: Int, pvie :: Int} | Treasure | Trap 
+    deriving (Eq)
 
 data Envi = Envi { contenu_envi :: M.Map Coord [ Entite ]} deriving (Show)
 
+
+instance Show Entite where 
+    show (Mob _ _ _) ="m"
+    show (Player _ _) = "p"
+    show Treasure  = "t"
+    show Trap  = "T"
 
 
 isPlayer :: Entite -> Bool 
 isPlayer (Player _ _ ) = True
 isPlayer _ = False
+
+
+isMob :: Entite -> Bool 
+isMob (Mob _ _ _) = True
+isMob _ = False
+
+isObject :: Entite -> Bool 
+isObject Treasure = True
+isObject Trap = True
+isObject _ = False
+
+isTrap :: Entite -> Bool 
+isTrap Trap = True
+isTrap _ = False
+
+isTreasure :: Entite -> Bool 
+isTreasure Treasure = True
+isTreasure _ = False
+
+
+
+
 
 
 franchissable_env :: Coord -> Envi -> Bool
