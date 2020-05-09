@@ -3,8 +3,9 @@ module Envi where
 import qualified Data.Map.Strict as M
 import Carte
 import System.Random
+import Foreign.C.Types (CInt, CDouble (..) )
 
-data Entite = Mob {iden :: Int , pvie :: Int, starting_time :: Double  }
+data Entite = Mob {iden :: Int , pvie :: Int, starting_time :: CDouble  }
     | Player {iden :: Int, pvie :: Int}
     deriving (Eq,Show)
 

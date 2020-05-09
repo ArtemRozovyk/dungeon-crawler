@@ -9,6 +9,7 @@ import System.Random
 import Sprite (Sprite)
 import qualified Sprite as S
 import Keyboard (Keyboard)
+import Foreign.C.Types (CDouble (..) )
 
 import SDL.Time (time)
 
@@ -52,7 +53,7 @@ etat_tour etat kbd deltaTime = do
 
 
 
-makeNEntities :: Int -> StdGen -> Double -> [Entite] 
+makeNEntities :: Int -> StdGen -> CDouble -> [Entite] 
 makeNEntities n gen moment = 
     let timesl= getNRandom [0..11] n gen False in 
         map (\t -> Mob 0 100 (moment+t) ) timesl 
@@ -60,7 +61,7 @@ makeNEntities n gen moment =
 
 
 
-init_state :: Carte -> Int -> Double-> StdGen -> Etat -- (Envi, M.Map Int Entite )
+init_state :: Carte -> Int -> CDouble-> StdGen -> Etat -- (Envi, M.Map Int Entite )
 init_state carte n moment gen =
     let (gen',g) = split gen in
     let entites = makeNEntities n g moment in
@@ -77,7 +78,7 @@ initGameState carte = do
     let (v,_) = randomR (1::Integer,10::Integer ) gen 
     putStrLn $ show v
     moment <- time
-    return $ init_state carte 3 moment gen  
+    return $ init_state carte 4 moment gen  
 
 fetchSpritesFromEnv :: Etat ->SpriteMap-> M.Map [Char] [Char] -> [Sprite]
 fetchSpritesFromEnv state smap mapTiles = 
@@ -89,7 +90,7 @@ fetchSpritesFromEnv state smap mapTiles =
 
 
 
-etat_tour ::RealFrac a => Etat -> Keyboard -> a ->StdGen-> Etat
+etat_tour ::Etat -> Keyboard ->CDouble ->StdGen-> Etat
 --call tour de toutes les entités obj_tour. win or loss? 
 etat_tour etat@(Tour nt ct et gt ot lgt) kbd moment gen= 
     let (g1,g2) = split gen in

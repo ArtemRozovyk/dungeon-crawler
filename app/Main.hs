@@ -7,7 +7,7 @@ import Control.Monad (unless,foldM,mapM_)
 import Control.Concurrent (threadDelay)
 import qualified Data.Map.Strict as Mp
 
-import Foreign.C.Types (CInt (..) )
+import Foreign.C.Types (CInt, CDouble (..) )
 
 import SDL
 import SDL.Time (time, delay)
@@ -46,10 +46,10 @@ toLoad = ["brick_brown.png","closed_door_eo.png",
 tiles = ["X","|","-","E","S","/","\\","p","m"]
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
 
-loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> IO (TextureMap, SpriteMap)
-loadGeneric rdr path tmap smap  = do
+loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> CInt-> CInt->  IO (TextureMap, SpriteMap)
+loadGeneric rdr path tmap smap l h  = do
   let name = takeWhile (/= '.') path 
-  let area = (if(name=="background") then (S.mkArea 0 0 480 480) else (S.mkArea 0 0 48 48))
+  let area = (if(name=="background") then (S.mkArea 0 0 l h) else (S.mkArea 0 0 48 48))
   tmap' <- TM.loadTexture rdr ("assets/used/"++path) (TextureId name) tmap
   let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId name) area
   let smap' = SM.addSprite (SpriteId name) sprite smap
@@ -61,12 +61,14 @@ loadGeneric rdr path tmap smap  = do
 main :: IO ()
 main = do
   initializeAll
-  carte <-carteFromFile "exemple"
-  window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = V2 480 480 }
+  carte <-carteFromFile "exemple2"
+  let (l,h)=((fromIntegral (cartel carte)*48),(fromIntegral(carteh carte)*48))
+  let wSize = V2 l h
+  window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = wSize}
   renderer <- createRenderer window (-1) defaultRenderer 
   (tmap0,smap0) <- (return $ (TM.createTextureMap,SM.createSpriteMap))
-  (tmap0',smap0') <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp ) (tmap0,smap0) toLoad
-  (tmap, smap) <- loadGeneric renderer "background.jpg" tmap0' smap0'
+  (tmap0',smap0') <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp 0 0 ) (tmap0,smap0) toLoad
+  (tmap, smap) <- loadGeneric renderer "background.jpg" tmap0' smap0' l h 
   --putStrLn (show (carteh carte))
   -- chargement de l'image du fond
   -- initialisation de l'état du jeu
@@ -77,6 +79,12 @@ main = do
   -- lancement de la gameLoop
   gameState <- initGameState carte
   gameLoop 60 renderer tmap smap kbd carte gameState
+
+
+test ::  CDouble -> CDouble -> CDouble 
+test t d= t - d
+
+
 
 gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> Etat-> IO ()
 gameLoop frameRate renderer tmap smap kbd carte gameState= do
@@ -92,20 +100,9 @@ gameLoop frameRate renderer tmap smap kbd carte gameState= do
 
   present renderer
   endTime <- time
-  let refreshTime = endTime - startTime
-  let delayTime = floor (((1.0 / frameRate) - refreshTime) * 1000)
-  threadDelay $ delayTime * 1000 -- microseconds
-  endTime <- time
-  let deltaTime = endTime - startTime
-  -- putStrLn $ "Delta time: " <> (show (deltaTime * 1000)) <> " (ms)"
-  -- putStrLn $ "Frame rate: " <> (show (1 / deltaTime)) <> " (frame/s)"
 
-  --putStrLn $ "Time : " <> (show endTime)
-
-  --- update du game state
- 
   let (gen,_) =split (gen_tour gameState)
-  let (v,_) = randomR (1::Integer,10::Integer ) gen 
+  --let (v,_) = randomR (1::Integer,10::Integer ) gen 
   --putStrLn $ show v
   let gameState' = etat_tour gameState kbd endTime gen
   --let gameState' = M.gameStep gameState kbd' deltaTime
