@@ -4,9 +4,9 @@ import qualified Data.Map.Strict as M
 import Carte
 import System.Random
 import Foreign.C.Types (CInt, CDouble (..) )
-
+import Data.Maybe
 data Entite = Mob {iden :: Int , pvie :: Int, starting_time :: CDouble  }
-    | Player {iden :: Int, pvie :: Int} | Treasure | Trap 
+    | Player {iden :: Int, pvie :: Int, hasTreasure ::Bool} | Treasure | Trap 
     deriving (Eq)
 
 data Envi = Envi { contenu_envi :: M.Map Coord [ Entite ]} deriving (Show)
@@ -14,13 +14,13 @@ data Envi = Envi { contenu_envi :: M.Map Coord [ Entite ]} deriving (Show)
 
 instance Show Entite where 
     show (Mob _ _ _) ="m"
-    show (Player _ _) = "p"
+    show (Player _ _ _) = "p"
     show Treasure  = "t"
     show Trap  = "T"
 
 
 isPlayer :: Entite -> Bool 
-isPlayer (Player _ _ ) = True
+isPlayer (Player _ _ _ ) = True
 isPlayer _ = False
 
 
@@ -40,6 +40,13 @@ isTrap _ = False
 isTreasure :: Entite -> Bool 
 isTreasure Treasure = True
 isTreasure _ = False
+
+
+
+
+trouveCord  :: Envi -> Coord -> Maybe Entite 
+trouveCord e crd  = if(M.member crd (contenu_envi e)) then 
+    Just (head $ fromJust $M.lookup crd $ contenu_envi e) else Nothing
 
 
 
@@ -99,6 +106,11 @@ rm_env_id id (Envi contenu_envi) =
 ajout_id :: Entite -> [Entite] -> [Entite]      --C'etait pas vraiment nécessaire..
 ajout_id (Mob id pvie starting_time) xs =
     ([(Mob id pvie starting_time)]) <> xs
+
+getPlayer :: Envi -> (Coord, [Entite])
+getPlayer e = head (M.toList (M.filter (\x -> isPlayer $ head x) (contenu_envi e))) 
+
+
 
 
 ajout :: (Coord,Entite) -> Envi -> Envi

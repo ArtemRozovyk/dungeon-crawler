@@ -142,13 +142,15 @@ moveUp m@(Model c e g l k ) =
   let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
   let liste = M.toAscList(players) in 
   let (C x y, ent) = head liste in
-  case (M.lookup (C x (y-1)) (carte_contenu c)) of
-    Nothing -> error "Mon erreur"
-    Just a -> if isTraversable c x (y-1) && franchissable_env (C x (y-1)) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
+  let a = fromJust $ getCase c x (y-1) in -- erreur est lancé si Nothing, mais n'arrive jamais car carte est entrouré des murs. 
+    if isTraversable c x (y-1) && franchissable_env (C x (y-1)) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
               then  let remEnv = M.delete (C x y) (contenu_envi e) in  
                     let movedEnv = M.insert (C x (y-1)) ent remEnv in
                     Model c (Envi movedEnv) g l k
               else m 
+
+
+
 moveDown :: Modele -> Modele
 moveDown m@(Model c e g l k ) =
   let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
@@ -177,9 +179,7 @@ moveLeft m@(Model c e g l k ) =
 
 moveRight :: Modele -> Modele
 moveRight m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
+  let (C x y, ent) = getPlayer e in
   case (M.lookup (C (x+1) y) (carte_contenu c)) of
     Nothing -> error "Mon erreur"
     Just a -> if isTraversable c (x+1) y && franchissable_env (C (x+1) y) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
@@ -188,13 +188,31 @@ moveRight m@(Model c e g l k ) =
                     Model c (Envi movedEnv) g l k
               else m 
 
+
+takeTreasure :: Modele -> Coord -> Modele
+takeTreasure m@(Model c e g l k ) crd@(C x y) = 
+  let (C x y, ent) = getPlayer e  in
+  if (fromJust $ trouveCord e crd ) == Treasure
+              then 
+                let treasureLess = Envi $ M.fromList $ rmv_coor crd (M.toList $ contenu_envi e) in
+                let updatedPlayer =  ajout (C x y, (head ent){hasTreasure=True}) (rm_env_id 42 e) in 
+                Model c updatedPlayer g l k 
+                else m
+
+            
+
+
+
 gameStep :: Modele -> Keyboard -> Modele
 gameStep m kbd =
   let new_mo =if S.member KeycodeZ kbd then moveUp m
               else if S.member KeycodeS kbd then moveDown m
               else if S.member KeycodeQ kbd then moveLeft m
               else if S.member KeycodeD kbd then moveRight m
-              else if S.member KeycodeE kbd then openDoor4(openDoor3(openDoor2(openDoor1 m)))
+              else if S.member KeycodeE kbd then openDoor4(openDoor3(openDoor2(openDoor1 m))) -- rammaserTresor(frapperMob(opendoor))
+              else if S.member KeycodeR kbd 
+                then L.foldl ( \ modele coord -> takeTreasure modele coord   ) m [(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)]
+
               else m
     in
       new_mo

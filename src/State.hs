@@ -68,7 +68,7 @@ init_state carte n moment gen =
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
     let places = getNRandom  emptyCases (length entites) gen' True in
     let mbs= foldl (\e (c,m) ->  add_entity e c m) (empty_state carte gen') (zip (map (\(c,_)-> c) places) entites) in
-        let player = [Player 42 100] in
+        let player = [Player 42 100 False] in
         mbs {envi_tour = Envi $ M.insert (getEntreeCoord carte) player (contenu_envi (envi_tour mbs)),
         obj_tour = M.insert 42 (head player) (obj_tour mbs)} 
 
