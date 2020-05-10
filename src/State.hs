@@ -9,6 +9,7 @@ import System.Random
 import Sprite (Sprite)
 import qualified Sprite as S
 import Keyboard (Keyboard)
+import Foreign.C.Types (CDouble (..) )
 
 import SDL.Time (time)
 
@@ -32,9 +33,9 @@ empty_state carte gen =
 add_entity :: Etat -> Coord -> Entite -> Etat 
 add_entity s c e =
     let id = (foldl max 0 (M.keys $ obj_tour s ))+1 in
-    let ent = e{iden=id} in
+    let ent = if(not $ isObject $ e) then e{iden=id} else e in
     let ot = M.insert id ent (obj_tour s) in 
-    if M.member c (contenu_envi (envi_tour s)) 
+    if M.member c (contenu_envi (envi_tour s)) --there are already entities 
     then s { envi_tour= Envi $ M.adjust (++[ent]) c (contenu_envi (envi_tour s)), obj_tour=ot}
     else s { envi_tour= Envi $ M.insert c [ent] (contenu_envi (envi_tour s)), obj_tour=ot }
 
@@ -52,7 +53,7 @@ etat_tour etat kbd deltaTime = do
 
 
 
-makeNEntities :: Int -> StdGen -> Double -> [Entite] 
+makeNEntities :: Int -> StdGen -> CDouble -> [Entite] 
 makeNEntities n gen moment = 
     let timesl= getNRandom [0..11] n gen False in 
         map (\t -> Mob 0 100 (moment+t) ) timesl 
@@ -60,10 +61,10 @@ makeNEntities n gen moment =
 
 
 
-init_state :: Carte -> Int -> Double-> StdGen -> Etat -- (Envi, M.Map Int Entite )
+init_state :: Carte -> Int -> CDouble-> StdGen -> Etat -- (Envi, M.Map Int Entite )
 init_state carte n moment gen =
     let (gen',g) = split gen in
-    let entites = makeNEntities n g moment in
+    let entites = (Trap):(Treasure):(makeNEntities n g moment) in
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
     let places = getNRandom  emptyCases (length entites) gen' True in
     let mbs= foldl (\e (c,m) ->  add_entity e c m) (empty_state carte gen') (zip (map (\(c,_)-> c) places) entites) in
@@ -77,19 +78,17 @@ initGameState carte = do
     let (v,_) = randomR (1::Integer,10::Integer ) gen 
     putStrLn $ show v
     moment <- time
-    return $ init_state carte 3 moment gen  
+    return $ init_state carte 8 moment gen  
 
 fetchSpritesFromEnv :: Etat ->SpriteMap-> M.Map [Char] [Char] -> [Sprite]
 fetchSpritesFromEnv state smap mapTiles = 
     let env = M.toList (contenu_envi $ envi_tour state) in do 
         (C x y,ents) <- env  --TODO multiple entities in single case
         let ent = head ents 
-        return (fetchSingleSprite (M.lookup (if (isPlayer ent ) then "p" else "m") mapTiles) smap (x*48) (y*48))
+        return (fetchSingleSprite (M.lookup (show ent) mapTiles) smap (x*48) (y*48))
 
 
-
-
-etat_tour ::RealFrac a => Etat -> Keyboard -> a ->StdGen-> Etat
+etat_tour ::Etat -> Keyboard ->CDouble ->StdGen-> Etat
 --call tour de toutes les entités obj_tour. win or loss? 
 etat_tour etat@(Tour nt ct et gt ot lgt) kbd moment gen= 
     let (g1,g2) = split gen in

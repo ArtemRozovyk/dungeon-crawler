@@ -3,6 +3,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.List as L
 import qualified Keyboard as K
 import Data.Set as S
+import Foreign.C.Types (CDouble (..) )
 
 import SDL
 import Keyboard (Keyboard)
@@ -34,9 +35,6 @@ makeCoord ord (C x y) = case ord of
   O -> C (x-1) y  
   Model.E -> C (x+1) y  
 
-
-
-
 --random weighted pick the order and make a move altering the model
 
 randomCumulate :: [(Int,Ordre)] -> Int -> Int -> (Int,Ordre) 
@@ -45,14 +43,11 @@ randomCumulate (x:xs) p acc =
   let acc' = acc + (fst x) in 
    if (p <= acc') then x else randomCumulate xs p acc'
 
-
 pickRandomWeighted :: [(Int,Ordre)] -> StdGen -> Ordre 
 pickRandomWeighted l gen =
   let totalweight = L.foldl (\b (v,_)->b+v) 0 l in
   let (p,_) = randomR (1,totalweight) gen in
   snd (randomCumulate l p 0)
-
-
 
 decide :: [(Int, Ordre)] -> Modele -> Entite-> Coord -> Modele
 decide l m@(Model c env g lg k) ent cord =
@@ -62,9 +57,6 @@ decide l m@(Model c env g lg k) ent cord =
   let movedEnv = M.insert (makeCoord ord cord) [ent] remEnv in
     Model c (Envi movedEnv) g lg k
   
-
-  
-
 --see through map and envi where i can go
 prevoit:: Modele -> Coord -> [(Int, Ordre)]
 prevoit m@(Model c e g _ _ ) crd@(C x y) = 
@@ -76,21 +68,15 @@ prevoit m@(Model c e g _ _ ) crd@(C x y) =
   let ordres = L.map (\(_,(C x1 y1)) -> makeOrder crd x1 y1 ) passable_env in 
     zip weights ordres 
   
-bouge ::RealFrac a => Modele -> Entite -> Coord -> a ->Modele
+bouge :: Modele -> Entite -> Coord -> CDouble ->Modele
 bouge m ent@(Mob id hp st) coord time = 
-  let (b,a) = properFraction time in
-  if((fst (properFraction time)-(round st)) `mod` 3==0) -- a step every 2 seconds (normally)
+  if( (time - st)-((fromIntegral $ round(time - st))::CDouble) <  0.8 ) -- a step every 2 seconds (normally)
     then decide (prevoit m coord) m ent{starting_time = st +2} coord
     else m
-  
 
-
-
-
-
-stepMobs ::RealFrac a => Modele -> a -> Modele 
+stepMobs ::Modele -> CDouble -> Modele 
 stepMobs m@(Model c e g l k ) time = 
-  let mobs = M.filter (\x -> not $ isPlayer $ head x) (contenu_envi e) in --TODO multiple entit one case
+  let mobs = M.filter (\x -> isMob $ head x) (contenu_envi e) in --TODO multiple entit one case
   M.foldlWithKey (\md crd ent  -> (bouge md (head ent) crd) time) m mobs
 
 stepPlayer ::Modele -> Modele 
@@ -216,8 +202,6 @@ gameStep m kbd =
 
 
 {-
-
-
 data Etat = Perdu
     | Gagne
     | Tour {
@@ -227,10 +211,6 @@ data Etat = Perdu
     gen_tour :: StdGen,
     obj_tour :: (M.Map Int Entite),
     log :: String}
-
-
-
-
 
 data GameState = GameState { persoX :: Int
                            , persoY :: Int
@@ -260,7 +240,6 @@ moveUp gs@(GameState _ py _ _ sp) | py > 0 = gs { persoY = py - sp }
 moveDown :: GameState -> GameState
 moveDown gs@(GameState _ py _ _ sp) | py < 320 = gs { persoY = py + sp }
                                 | otherwise = gs
-
 gameStep :: RealFrac a => GameState -> Keyboard -> a -> GameState
 gameStep gstate kbd deltaTime =
   -- A MODIFIFIER
