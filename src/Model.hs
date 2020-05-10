@@ -189,19 +189,21 @@ moveRight m@(Model c e g l k ) =
               else m 
 
 
-takeTreasure :: Modele -> Coord -> Modele
-takeTreasure m@(Model c e g l k ) crd@(C x y) = 
-  let (C x y, ent) = getPlayer e  in
-  if (fromJust $ trouveCord e crd ) == Treasure
-              then 
-                let treasureLess = Envi $ M.fromList $ rmv_coor crd (M.toList $ contenu_envi e) in
-                let updatedPlayer =  ajout (C x y, (head ent){hasTreasure=True}) (rm_env_id 42 e) in 
+interactObject :: Modele -> Coord -> Modele
+interactObject m@(Model c e g l k ) crd@(C x y) =
+  let (C x1 y1, ent) = getPlayer e  in 
+  let cordObject =  C (x1+x) (y1+y) in case trouve_env_Cord e cordObject of 
+    Nothing -> m 
+    Just Treasure -> let trPlLess =  (rmv_coor_envi (C x1 y1) (rmv_coor_envi cordObject e))  in
+                let updatedPlayer =  ajout_env (C x1 y1, (head ent){hasTreasure=True}) trPlLess in 
                 Model c updatedPlayer g l k 
-                else m
-
-            
-
-
+    Just (Mob idMob hp timeMob) -> let enviNoHitMob = (rmv_coor_envi cordObject e) in 
+      if(hp - 25 < 0)
+        then Model c enviNoHitMob g l k --mob has died
+        else Model c (ajout_env (cordObject,(Mob idMob (hp-25) timeMob)) enviNoHitMob) g l k
+           
+interactObjectsEnvi :: Modele -> Modele 
+interactObjectsEnvi m =   L.foldl (\modele coord -> interactObject modele coord) m [(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)]
 
 gameStep :: Modele -> Keyboard -> Modele
 gameStep m kbd =
@@ -210,13 +212,10 @@ gameStep m kbd =
               else if S.member KeycodeQ kbd then moveLeft m
               else if S.member KeycodeD kbd then moveRight m
               else if S.member KeycodeE kbd then openDoor4(openDoor3(openDoor2(openDoor1 m))) -- rammaserTresor(frapperMob(opendoor))
-              else if S.member KeycodeR kbd 
-                then L.foldl ( \ modele coord -> takeTreasure modele coord   ) m [(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)]
-
+              else if S.member KeycodeR kbd then interactObjectsEnvi m 
               else m
     in
       new_mo
-    
 
 
 {-

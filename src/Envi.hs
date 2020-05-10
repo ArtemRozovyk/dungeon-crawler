@@ -40,16 +40,14 @@ isTrap _ = False
 isTreasure :: Entite -> Bool 
 isTreasure Treasure = True
 isTreasure _ = False
-
-
-
-
+{-
 trouveCord  :: Envi -> Coord -> Maybe Entite 
-trouveCord e crd  = if(M.member crd (contenu_envi e)) then 
-    Just (head $ fromJust $M.lookup crd $ contenu_envi e) else Nothing
-
-
-
+trouveCord e crd  = if(M.member crd (contenu_envi e)) 
+    then Just (head $ fromJust $M.lookup crd $ contenu_envi e) 
+    else Just Treasure
+-}
+trouve_env_Cord  :: Envi -> Coord -> Maybe Entite 
+trouve_env_Cord e crd  =  (M.lookup crd $ contenu_envi e)>>=(\x-> Just $ head x )  
 
 
 
@@ -63,9 +61,8 @@ analyse id (C x y, (Mob iden pvie starting_time):xs) =
     then Just (C x y,(Mob iden pvie starting_time))
     else analyse id (C x y, xs)
 
-
 trouve_id :: Int -> Envi -> Maybe (Coord, Entite)
-trouve_id id (Envi contenu_envi) = 
+trouve_id id (Envi contenu_envi ) = 
     let liste = M.toAscList contenu_envi in
         aux id liste 
     where
@@ -75,7 +72,6 @@ trouve_id id (Envi contenu_envi) =
             case analyse id (C x y, entite) of
                 Just e -> Just e
                 Nothing -> aux id xs
-
 
 rmv_id ::  Int -> [Entite] -> [Entite]
 rmv_id id ((Mob iden pvie starting_time):xs) = 
@@ -89,7 +85,9 @@ rmv_coor (C x y) ((C x1 y1, entite):xs) =
     then xs 
     else ([(C x1 y1, entite)]) <> rmv_coor (C x y) xs
 
-
+rmv_coor_envi :: Coord -> Envi -> Envi 
+rmv_coor_envi crd env@(Envi cont) =
+    Envi $ M.delete crd cont
 
 rm_env_id :: Int -> Envi -> Envi
 rm_env_id id (Envi contenu_envi) = 
@@ -104,20 +102,22 @@ rm_env_id id (Envi contenu_envi) =
                                                                                     (Envi (M.fromList(newEnvi <> [(newCase)]))) 
 
 ajout_id :: Entite -> [Entite] -> [Entite]      --C'etait pas vraiment nécessaire..
-ajout_id (Mob id pvie starting_time) xs =
-    ([(Mob id pvie starting_time)]) <> xs
+ajout_id ent xs =
+    ([ent]) <> xs
 
 getPlayer :: Envi -> (Coord, [Entite])
 getPlayer e = head (M.toList (M.filter (\x -> isPlayer $ head x) (contenu_envi e))) 
 
-
+ajout_env :: (Coord,Entite) -> Envi -> Envi 
+ajout_env (crd,ent) env@(Envi cnt) = 
+    env{contenu_envi=M.insert crd [ent] cnt}
 
 
 ajout :: (Coord,Entite) -> Envi -> Envi
-ajout (C x y, (Mob id pvie starting_time)) (Envi contenu_envi) =
+ajout (C x y, ent) (Envi contenu_envi) =
     case (M.lookup (C x y) contenu_envi) of
         Nothing -> error  "Should not occur"
-        Just list_ent -> let newListEntite = ajout_id (Mob id pvie starting_time) list_ent in
+        Just list_ent -> let newListEntite = ajout_id ent list_ent in
                             let newCase = (C x y, newListEntite) in 
                                 let liste_contenu =  M.toAscList contenu_envi in
                                     let newEnvi = rmv_coor (C x y) liste_contenu in

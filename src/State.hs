@@ -64,7 +64,7 @@ makeNEntities n gen moment =
 init_state :: Carte -> Int -> CDouble-> StdGen -> Etat -- (Envi, M.Map Int Entite )
 init_state carte n moment gen =
     let (gen',g) = split gen in
-    let entites = (Trap):(Treasure):(makeNEntities n g moment) in
+    let entites = (Trap):(Treasure):(Treasure):(Treasure):(makeNEntities n g moment) in
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
     let places = getNRandom  emptyCases (length entites) gen' True in
     let mbs= foldl (\e (c,m) ->  add_entity e c m) (empty_state carte gen') (zip (map (\(c,_)-> c) places) entites) in
@@ -78,7 +78,7 @@ initGameState carte = do
     let (v,_) = randomR (1::Integer,10::Integer ) gen 
     putStrLn $ show v
     moment <- time
-    return $ init_state carte 8 moment gen  
+    return $ init_state carte 2 moment gen  
 
 fetchSpritesFromEnv :: Etat ->SpriteMap-> M.Map [Char] [Char] -> [Sprite]
 fetchSpritesFromEnv state smap mapTiles = 
