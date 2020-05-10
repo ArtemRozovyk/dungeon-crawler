@@ -69,7 +69,7 @@ prevoit m@(Model c e g _ _ ) crd@(C x y) =
   
 bouge :: Modele -> Entite -> Coord -> CDouble ->Modele
 bouge m ent@(Mob id hp st) coord time = 
-  if( (time - st)-((fromIntegral $ round(time - st))::CDouble) <  0.8 ) -- a step every 2 seconds (normally)
+  if( (round(time - st) `mod` 3 == 0) && (time - st)-((fromIntegral $ round(time - st))::CDouble) <  0.01 ) -- a step every 2 seconds (normally)
     then decide (prevoit m coord) m ent{starting_time = st +2} coord
     else m
 
