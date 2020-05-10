@@ -8,7 +8,7 @@ import qualified Data.Map as M
 
 import SDL
 import qualified SDL.Video.Renderer as R
-import qualified SDL.Image as IMG
+--import qualified SDL.Image as IMG
 
 newtype TextureId = TextureId String
   deriving (Eq, Ord)
@@ -31,7 +31,9 @@ addTexture tid txt tmap =
 -- | Chargement d'une texture à partir d'un fichier
 loadTexture  :: Renderer -> FilePath -> TextureId -> TextureMap -> IO TextureMap
 loadTexture rdr path tid tmap = do
-  txt <- IMG.loadTexture rdr path
+  srf <- R.loadBMP path
+  txt <- createTextureFromSurface rdr srf
+  R.freeSurface srf
   pure $ addTexture tid txt tmap 
 
 -- | Récupération d'une texture à partir de sa clé

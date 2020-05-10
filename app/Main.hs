@@ -78,16 +78,10 @@ main = do
   --putStrLn $ concat $ testCarte carte
   -- lancement de la gameLoop
   gameState <- initGameState carte
-  gameLoop 60 renderer tmap smap kbd carte gameState
+  gameLoop 60 renderer tmap smap kbd gameState
 
-
-test ::  CDouble -> CDouble -> CDouble 
-test t d= t - d
-
-
-
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> Etat-> IO ()
-gameLoop frameRate renderer tmap smap kbd carte gameState= do
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Etat-> IO ()
+gameLoop frameRate renderer tmap smap kbd gameState= do
   startTime <- time
   events <- pollEvents
   let kbd' = K.handleEvents events kbd
@@ -95,7 +89,7 @@ gameLoop frameRate renderer tmap smap kbd carte gameState= do
   --- display background
   S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
   --- display carte 
-  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte carte smap mapTiles)
+  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte (carte_tour gameState) smap mapTiles)
   mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromEnv gameState smap mapTiles)
 
   present renderer
@@ -104,7 +98,13 @@ gameLoop frameRate renderer tmap smap kbd carte gameState= do
   let (gen,_) =split (gen_tour gameState)
   --let (v,_) = randomR (1::Integer,10::Integer ) gen 
   --putStrLn $ show v
-  let gameState' = etat_tour gameState kbd endTime gen
-  --let gameState' = M.gameStep gameState kbd' deltaTime
-  
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' carte gameState')
+  let gameState' = etat_tour gameState kbd' endTime gen
+  --let gs@(Tour nt carte' et gt ot lgt) = gameState'
+  --let gameState' = M.gameStep gameState kbd' 
+  let kbd'' = K.createKeyboard
+  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd'' gameState')
+
+
+--test :: IO ()
+--test = do
+
