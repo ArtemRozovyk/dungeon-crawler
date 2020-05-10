@@ -40,9 +40,9 @@ toModel k e@(Tour _ c env g o l)= Model c env g "" k
 -}
 
 
-toLoad = ["brick_brown.png","closed_door_eo.png",
-    "closed_door_ns.png", "entrance.png","exit.png",
-    "open_door_eo.png","open_door_ns.png","player.png","monster.png"]; 
+toLoad = ["brick_brown.bmp","closed_door_eo.bmp",
+    "closed_door_ns.bmp", "entrance.bmp","exit.bmp",
+    "open_door_eo.bmp","open_door_ns.bmp","player.bmp","monster.bmp"]; 
 tiles = ["X","|","-","E","S","/","\\","p","m"]
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
 
@@ -66,7 +66,7 @@ main = do
   renderer <- createRenderer window (-1) defaultRenderer 
   (tmap0,smap0) <- (return $ (TM.createTextureMap,SM.createSpriteMap))
   (tmap0',smap0') <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp ) (tmap0,smap0) toLoad
-  (tmap, smap) <- loadGeneric renderer "background.jpg" tmap0' smap0'
+  (tmap, smap) <- loadGeneric renderer "background.bmp" tmap0' smap0'
   --putStrLn (show (carteh carte))
   -- chargement de l'image du fond
   -- initialisation de l'état du jeu
@@ -76,10 +76,10 @@ main = do
   --putStrLn $ concat $ testCarte carte
   -- lancement de la gameLoop
   gameState <- initGameState carte
-  gameLoop 60 renderer tmap smap kbd carte gameState
+  gameLoop 60 renderer tmap smap kbd gameState
 
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Carte -> Etat-> IO ()
-gameLoop frameRate renderer tmap smap kbd carte gameState= do
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Etat-> IO ()
+gameLoop frameRate renderer tmap smap kbd gameState= do
   startTime <- time
   events <- pollEvents
   let kbd' = K.handleEvents events kbd
@@ -87,7 +87,7 @@ gameLoop frameRate renderer tmap smap kbd carte gameState= do
   --- display background
   S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
   --- display carte 
-  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte carte smap mapTiles)
+  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte (carte_tour gameState) smap mapTiles)
   mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromEnv gameState smap mapTiles)
 
   present renderer
@@ -107,7 +107,13 @@ gameLoop frameRate renderer tmap smap kbd carte gameState= do
   let (gen,_) =split (gen_tour gameState)
   let (v,_) = randomR (1::Integer,10::Integer ) gen 
   --putStrLn $ show v
-  let gameState' = etat_tour gameState kbd endTime gen
-  --let gameState' = M.gameStep gameState kbd' deltaTime
-  
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd' carte gameState')
+  let gameState' = etat_tour gameState kbd' endTime gen
+  --let gs@(Tour nt carte' et gt ot lgt) = gameState'
+  --let gameState' = M.gameStep gameState kbd' 
+  let kbd'' = K.createKeyboard
+  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd'' gameState')
+
+
+--test :: IO ()
+--test = do
+

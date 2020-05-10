@@ -93,7 +93,8 @@ etat_tour ::RealFrac a => Etat -> Keyboard -> a ->StdGen-> Etat
 --call tour de toutes les entités obj_tour. win or loss? 
 etat_tour etat@(Tour nt ct et gt ot lgt) kbd moment gen= 
     let (g1,g2) = split gen in
-    let modele = Model ct et g1 "" kbd in
+    let modele' = Model ct et g1 "" kbd in
+    let modele = gameStep modele' kbd in
     let modeleF= stepMobs modele moment in
         Tour nt (carte modeleF) (envi modeleF) g2 ot ((log_m modeleF)++lgt)
 
