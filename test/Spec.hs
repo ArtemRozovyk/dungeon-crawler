@@ -1,4 +1,10 @@
+import Test.Hspec
+
+import Carte 
+import CarteSpec as CS
+
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
-
-
+main = hspec $ do
+  -- revrev
+  CS.engineSpec 

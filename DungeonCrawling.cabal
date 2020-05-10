@@ -74,13 +74,13 @@ test-suite DungeonCrawling-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      CarteSpec
       Paths_DungeonCrawling
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      DungeonCrawling
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , containers
     , hspec
     , text
