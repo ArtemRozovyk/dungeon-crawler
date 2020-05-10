@@ -63,7 +63,7 @@ prevoit m@(Model c e g _ _ ) crd@(C x y) =
   let toLookUp = [(x+1,y),(x-1,y),(x,y-1),(x,y+1)] in --r l u d 
   let cases = catMaybes $ L.map (\(cx,cy) -> (getCase2 c cx cy) ) toLookUp in 
   let passable_carte = L.filter (\(_,(C ax by)) -> isTraversable c ax by ) cases in 
-  let passable_env = L.filter (\(_,crd2) -> franchissable_env crd2 e ) passable_carte in 
+  let passable_env = L.filter (\(_,crd2) -> franchissable_env crd2 e False ) passable_carte in 
   let weights = getNRandom [1..4] (length passable_env) g False in 
   let ordres = L.map (\(_,(C x1 y1)) -> makeOrder crd x1 y1 ) passable_env in 
     zip weights ordres 
@@ -82,109 +82,31 @@ stepMobs m@(Model c e g l k ) time =
 stepPlayer ::Modele -> Modele 
 stepPlayer m@(Model c e g l k ) = undefined
 
-openDoor1 :: Modele -> Modele 
-openDoor1 m@(Model c e g l k ) =
+openDoorGenerique :: Modele -> Coord -> Modele
+openDoorGenerique m@(Model c e g l k ) (C x1 y1) = 
   let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
   let liste = M.toAscList(players) in 
   let (C x y, ent) = head liste in
-  case (M.lookup (C (x+1) y) (carte_contenu c)) of
-    Nothing -> error "Mon erreur2"
-    Just a -> if a == Porte EO Fermee
-              then let remCar = M.delete (C (x+1) y) (carte_contenu c) in  
-                   let movedCar = M.insert (C (x+1) y) (Porte EO Ouverte) remCar in
+  let a = fromJust $ getCase c (x+x1) (y+y1) in
+    if a == Porte EO Fermee || a == Porte NS Fermee
+    then let remCar = M.delete (C (x+x1) (y+y1)) (carte_contenu c) in  
+          if a == Porte EO Fermee
+          then let movedCar = M.insert (C (x+x1) (y+y1)) (Porte EO Ouverte) remCar in
                       Model (Carte (cartel c) (carteh c) movedCar) e g l k
-              else m
-
-openDoor2 :: Modele -> Modele 
-openDoor2 m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
-  case (M.lookup (C (x-1) y) (carte_contenu c)) of
-    Nothing -> error "Mon erreur2"
-    Just a -> if a == Porte EO Fermee
-              then let remCar = M.delete (C (x-1) y) (carte_contenu c) in  
-                   let movedCar = M.insert (C (x-1) y) (Porte EO Ouverte) remCar in
+          else let movedCar = M.insert (C (x+x1) (y+y1)) (Porte NS Ouverte) remCar in
                       Model (Carte (cartel c) (carteh c) movedCar) e g l k
-              else m
+    else m 
 
-openDoor3 :: Modele -> Modele 
-openDoor3 m@(Model c e g l k ) =
+
+moveGenerique :: Modele -> Coord -> Modele 
+moveGenerique m@(Model c e g l k ) (C x1 y1) = 
   let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
   let liste = M.toAscList(players) in 
   let (C x y, ent) = head liste in
-  case (M.lookup (C x (y+1)) (carte_contenu c)) of
-    Nothing -> error "Mon erreur2"
-    Just a -> if a == Porte NS Fermee
-              then let remCar = M.delete (C x (y+1)) (carte_contenu c) in  
-                   let movedCar = M.insert (C x (y+1)) (Porte NS Ouverte) remCar in
-                      Model (Carte (cartel c) (carteh c) movedCar) e g l k
-              else m
-
-openDoor4 :: Modele -> Modele 
-openDoor4 m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
-  case (M.lookup (C x (y-1)) (carte_contenu c)) of
-    Nothing -> error "Mon erreur2"
-    Just a -> if a == Porte NS Fermee
-              then let remCar = M.delete (C x (y-1)) (carte_contenu c) in  
-                   let movedCar = M.insert (C x (y-1)) (Porte NS Ouverte) remCar in
-                      Model (Carte (cartel c) (carteh c) movedCar) e g l k
-              else m
-
-
-
-
-moveUp :: Modele -> Modele
-moveUp m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
-  let a = fromJust $ getCase c x (y-1) in -- erreur est lancé si Nothing, mais n'arrive jamais car carte est entrouré des murs. 
-    if isTraversable c x (y-1) && franchissable_env (C x (y-1)) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
+  let a = fromJust $ getCase c (x+x1) (y+y1) in
+    if isTraversable c (x+x1) (y+y1) && franchissable_env (C (x+x1) (y+y1)) e True
               then  let remEnv = M.delete (C x y) (contenu_envi e) in  
-                    let movedEnv = M.insert (C x (y-1)) ent remEnv in
-                    Model c (Envi movedEnv) g l k
-              else m 
-
-
-
-moveDown :: Modele -> Modele
-moveDown m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
-  case (M.lookup (C x (y+1)) (carte_contenu c)) of
-    Nothing -> error "Mon erreur"
-    Just a -> if isTraversable c x (y+1) && franchissable_env (C x (y+1)) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
-              then  let remEnv = M.delete (C x y) (contenu_envi e) in  
-                    let movedEnv = M.insert (C x (y+1)) ent remEnv in
-                    Model c (Envi movedEnv) g l k
-              else m 
-
-moveLeft :: Modele -> Modele
-moveLeft m@(Model c e g l k ) =
-  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in 
-  let liste = M.toAscList(players) in 
-  let (C x y, ent) = head liste in
-  case (M.lookup (C (x-1) y) (carte_contenu c)) of
-    Nothing -> error "Mon erreur"
-    Just a -> if isTraversable c (x-1) y && franchissable_env (C (x-1) y) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
-              then  let remEnv = M.delete (C x y) (contenu_envi e) in  
-                    let movedEnv = M.insert (C (x-1) y) ent remEnv in
-                    Model c (Envi movedEnv) g l k
-              else m 
-
-moveRight :: Modele -> Modele
-moveRight m@(Model c e g l k ) =
-  let (C x y, ent) = getPlayer e in
-  case (M.lookup (C (x+1) y) (carte_contenu c)) of
-    Nothing -> error "Mon erreur"
-    Just a -> if isTraversable c (x+1) y && franchissable_env (C (x+1) y) e && a /= (Porte NS Fermee) && a /= (Porte EO Fermee)
-              then  let remEnv = M.delete (C x y) (contenu_envi e) in  
-                    let movedEnv = M.insert (C (x+1) y) ent remEnv in
+                    let movedEnv = M.insert (C (x+x1) (y+y1)) ent remEnv in
                     Model c (Envi movedEnv) g l k
               else m 
 
@@ -207,11 +129,11 @@ interactObjectsEnvi m =   L.foldl (\modele coord -> interactObject modele coord)
 
 gameStep :: Modele -> Keyboard -> Modele
 gameStep m kbd =
-  let new_mo =if S.member KeycodeZ kbd then moveUp m
-              else if S.member KeycodeS kbd then moveDown m
-              else if S.member KeycodeQ kbd then moveLeft m
-              else if S.member KeycodeD kbd then moveRight m
-              else if S.member KeycodeE kbd then openDoor4(openDoor3(openDoor2(openDoor1 m))) -- rammaserTresor(frapperMob(opendoor))
+  let new_mo =if S.member KeycodeZ kbd then moveGenerique m (C 0 (-1))
+              else if S.member KeycodeS kbd then moveGenerique m (C 0 1) 
+              else if S.member KeycodeQ kbd then moveGenerique m (C (-1) 0)
+              else if S.member KeycodeD kbd then moveGenerique m (C 1 0)
+              else if S.member KeycodeE kbd then L.foldl ( \coord modele -> openDoorGenerique coord modele  ) m ([(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)])
               else if S.member KeycodeR kbd then interactObjectsEnvi m 
               else m
     in

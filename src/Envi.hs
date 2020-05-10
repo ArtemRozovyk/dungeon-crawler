@@ -51,8 +51,21 @@ trouve_env_Cord e crd  =  (M.lookup crd $ contenu_envi e)>>=(\x-> Just $ head x 
 
 
 
-franchissable_env :: Coord -> Envi -> Bool
-franchissable_env crd env= not $ M.member crd (contenu_envi env)
+--franchissable_env :: Coord -> Envi -> Bool
+--franchissable_env crd env= not $ M.member crd (contenu_envi env)
+
+franchissable_env :: Coord -> Envi -> Bool -> Bool --B a True si l'entitée appelante peux marcher sur un piege
+franchissable_env (C x y) e b =
+    case M.lookup (C x y) (contenu_envi e) of
+        Nothing -> True
+        Just list_ent -> aux list_ent
+        where 
+            aux :: [Entite] -> Bool 
+            aux [] = True 
+            aux (entite:xs) =
+                if isMob(entite) || isPlayer(entite) || isTreasure(entite) || (not $ b && isTrap(entite)) 
+                then False
+                else aux xs
 
 analyse :: Int -> (Coord, [Entite]) -> Maybe (Coord, Entite)
 analyse _ (C _ _, []) = Nothing
