@@ -39,18 +39,20 @@ add_entity s c e =
     then s { envi_tour= Envi $ M.adjust (++[ent]) c (contenu_envi (envi_tour s)), obj_tour=ot}
     else s { envi_tour= Envi $ M.insert c [ent] (contenu_envi (envi_tour s)), obj_tour=ot }
 
-{-
-etat_tour ::RealFrac a => Etat -> Keyboard -> a -> Etat
---call tour de toutes les entités obj_tour. win or loss? 
-
-etat_tour etat kbd deltaTime = do 
-    let model = Model (carte_tour etat) (gen_tour etat) "" kbd 
-    foldl takeTurn model ()
--}
-
-
-
-
+change_etat :: Etat -> Etat
+change_etat etat@(Tour nt ct et gt ot lgt) =
+    let C x1 y1 = getSortieCoord(ct) in
+    let liste_env = M.toAscList(contenu_envi et) in 
+        aux liste_env etat (C x1 y1)
+        where 
+            aux ::[(Coord, [Entite])] -> Etat -> Coord -> Etat 
+            aux [] _ _ = Perdu 
+            aux ((C x y,ent):xs) etat (C x1 y1) =
+                if head ent == Trap 
+                then etat 
+                else if isPlayer(head ent) && x == x1 && y == y1
+                    then Gagne
+                    else aux xs etat (C x1 y1)
 
 
 makeNEntities :: Int -> StdGen -> CDouble -> [Entite] 
