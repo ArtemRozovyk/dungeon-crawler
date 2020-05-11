@@ -130,7 +130,7 @@ isTraversable :: Carte -> Int -> Int -> Bool
 isTraversable (Carte larg haut cases) x y = 
     case M.lookup (C x y) cases of
         Nothing -> False
-        Just x -> x /= Mur
+        Just x -> x /= Mur && x /= (Porte NS Fermee) && x/= (Porte EO Fermee)
 
 getEntreeCoord :: Carte -> Coord
 getEntreeCoord (Carte larg haut cases) =
@@ -140,6 +140,16 @@ getEntreeCoord (Carte larg haut cases) =
         aux [] = error "Should not occur"
         aux ((C x y, caase):xs) | caase == Entree = C x y
                                 | otherwise = aux xs
+
+getSortieCoord :: Carte -> Coord
+getSortieCoord (Carte larg haut cases) =
+    let list_cases = M.toAscList cases in
+        aux list_cases
+    where
+        aux [] = error "Should not occur"
+        aux ((C x y, caase):xs) | caase == Sortie = C x y
+                                | otherwise = aux xs
+
 {-
 exit_acces_prop :: Carte -> Bool
 exit_acces_prop carte@(Carte larg haut cases) =
