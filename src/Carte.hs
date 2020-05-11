@@ -12,7 +12,7 @@ import Control.Concurrent (threadDelay)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-import Data.List (foldl')
+import Data.List (foldl',find)
 
 import Foreign.C.Types (CInt (..) )
 
@@ -99,13 +99,13 @@ instance Read Case where
     readsPrec _ = readCase
 
 readAux :: String -> Int -> Int -> [(Coord, Case)] -> (Carte, String)
-readAux [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases))) + 1, carte_contenu = M.fromDistinctDescList cases}, []) -- end string
+readAux [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases))) + 1, carte_contenu = M.fromDistinctDescList cases}, []) 
 readAux str line column acc = 
     let result = (reads :: ReadS Case) str in
         if result == []
         then if (head str) == '\n'
              then readAux (tail str) (line+1) 0 acc  
-             else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, str)   -- le caractere lu invalide
+             else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, str)  
         else let [(caase , reste)] = result in
             readAux reste line (column+1) ((C column line, caase):acc)    
 
@@ -116,16 +116,13 @@ getCase :: Carte -> Int -> Int -> Maybe Case
 getCase (Carte _ _ cases) x y = M.lookup (C x y) cases
 
 
-getCase2 :: Carte -> Int -> Int -> Maybe  (Case,Coord)
-getCase2 (Carte _ _ cases) x y = 
+getCaseCoord :: Carte -> Int -> Int -> Maybe (Case,Coord)
+getCaseCoord (Carte _ _ cases) x y = 
     let res =  M.lookup (C x y) cases in 
         case res of 
             Nothing -> Nothing 
             Just caz -> Just (caz,C x y)
-
-
-
-
+            
 isTraversable :: Carte -> Int -> Int -> Bool
 isTraversable (Carte larg haut cases) x y = 
     case M.lookup (C x y) cases of
@@ -134,54 +131,31 @@ isTraversable (Carte larg haut cases) x y =
 
 getEntreeCoord :: Carte -> Coord
 getEntreeCoord (Carte larg haut cases) =
-    let list_cases = M.toAscList cases in
-        aux list_cases
-    where
-        aux [] = error "Should not occur"
-        aux ((C x y, caase):xs) | caase == Entree = C x y
-                                | otherwise = aux xs
+    case find (\(_,caze) -> caze == Entree) $ M.toList cases of 
+        Nothing -> error "There is no Entrance"
+        Just(crd, _)-> crd
 
 getSortieCoord :: Carte -> Coord
 getSortieCoord (Carte larg haut cases) =
-    let list_cases = M.toAscList cases in
-        aux list_cases
-    where
-        aux [] = error "Should not occur"
-        aux ((C x y, caase):xs) | caase == Sortie = C x y
-                                | otherwise = aux xs
+    case find (\(_,caze) -> caze == Sortie) $ M.toList cases of 
+        Nothing -> error "There is no Exit"
+        Just(crd, _)-> crd
 
-{-
-exit_acces_prop :: Carte -> Bool
-exit_acces_prop carte@(Carte larg haut cases) =
-    let coordEntry = getEntreeCoord carte in
-        exists_path carte [coordEntry] []
-    where
-        exists_path _ [] _ = False
-        exists_path carte ((C x y):coords) list =
-             if (getCase x y) == Sortie 
-             then True
-             else if isTraversable (x-1) y 
-                  then let 
-                      -}
+
 carteFromFile :: FilePath -> IO Carte
 carteFromFile file = do 
     fd <- openFile file ReadMode
     str <- hGetContents fd
     return (read str :: Carte)
-    
-carteFromFileShow :: FilePath -> IO ()
-carteFromFileShow file = do 
-    fd <- openFile file ReadMode
-    str <- hGetContents fd
-    putStrLn str
 
 carteToFile :: Carte -> FilePath -> IO ()
 carteToFile carte file = do 
     writeFile file (show carte)
     return ()
 
+
 fetchSingleSprite :: Maybe String -> SpriteMap -> Int ->Int -> Sprite
-fetchSingleSprite Nothing _ _ _ = error "should not occur"
+fetchSingleSprite Nothing _ _ _ = error "Passed Nothing fetchSingleSprite"
 fetchSingleSprite (Just name) smap x y = 
   (S.moveTo (SM.fetchSprite (SpriteId name) smap) (fromIntegral x) (fromIntegral y))
 
@@ -193,9 +167,3 @@ fetchSpritesFromCarte carte smap mapTiles =
     guard (M.member (show caze) mapTiles)
     return (fetchSingleSprite (M.lookup (show caze) mapTiles) smap (x*48) (y*48))
 
-{-
-testCarte :: Carte -> [String]
-testCarte carte =  let contentList = M.toList(carte_contenu carte) in do
-    (C x y,caze) <- contentList
-    guard (M.member (show caze) mapTiles)
-    return ( M.findWithDefault "z" (show caze) mapTiles ) -}

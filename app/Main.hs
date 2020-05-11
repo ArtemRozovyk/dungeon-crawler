@@ -28,28 +28,26 @@ import qualified Keyboard as K
 import qualified Debug.Trace as T
 
 import Model ()
-import qualified Model as M
 import System.Random
 import State
-
--- 
-{-
-toModel k e@(Tour _ c env g o l)= Model c env g "" k
- do kart <- carteFromFile "exemple";   s <- initGameState kart ; let toModel k e@(Tour _ c env g o l)= Model c env g "" k in let m = toModel K.createKeyboard  s in  putStrLn $ show $ contenu_envi $envi m ; return () 
-
--}
 
 
 toLoad = ["brick_brown.png","closed_door_eo.png",
     "closed_door_ns.png", "entrance.png","exit.png",
-    "open_door_eo.png","open_door_ns.png","player.png","monster.png","chest.png","trap.png"]; 
+    "open_door_eo.png","open_door_ns.png","player.png",
+    "monster.png","chest.png","trap.png"]
+
+wholeScreen = ["background.jpg","lose.png","win.png"]
+
 tiles = ["X","|","-","E","S","/","\\","p","m","t","T"]
+
 mapTiles = Mp.fromList (zip tiles (map (takeWhile (/= '.')) toLoad))
+
 
 loadGeneric :: Renderer-> FilePath -> TextureMap -> SpriteMap -> CInt-> CInt->  IO (TextureMap, SpriteMap)
 loadGeneric rdr path tmap smap l h  = do
   let name = takeWhile (/= '.') path 
-  let area = (if(name=="background") then (S.mkArea 0 0 l h) else (S.mkArea 0 0 48 48))
+  let area = (if(name=="background" || name=="win" || name=="lose") then (S.mkArea 0 0 l h) else (S.mkArea 0 0 48 48))
   tmap' <- TM.loadTexture rdr ("assets/used/"++path) (TextureId name) tmap
   let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId name) area
   let smap' = SM.addSprite (SpriteId name) sprite smap
@@ -68,43 +66,33 @@ main = do
   renderer <- createRenderer window (-1) defaultRenderer 
   (tmap0,smap0) <- (return $ (TM.createTextureMap,SM.createSpriteMap))
   (tmap0',smap0') <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp 0 0 ) (tmap0,smap0) toLoad
-  (tmap, smap) <- loadGeneric renderer "background.jpg" tmap0' smap0' l h 
-  --putStrLn (show (carteh carte))
-  -- chargement de l'image du fond
-  -- initialisation de l'état du jeu
-  --gameState <- M.initGameState
-  -- initialisation de l'état du clavier
-  let kbd = K.createKeyboard
-  --putStrLn $ concat $ testCarte carte
-  -- lancement de la gameLoop
-  gameState <- initGameState carte
-  gameLoop 60 renderer tmap smap kbd gameState
-
+  (tmap2,smap2) <- foldM (\(tmp,smp) path -> loadGeneric renderer path tmp smp l h ) (tmap0',smap0') wholeScreen 
+  gen  <- getStdGen::IO StdGen 
+  moment <- time
+  let gameState = initGameState carte gen moment
+  gameLoop 60 renderer tmap2 smap2 K.createKeyboard gameState
+carte1 = "XXXXXXXXXX\nX    | XSX\nX    X X-X\nXXXX X X X\nX    X X X\nX XXXX   X\nX    XXXXX\nX X    XXX\nXE  X  XXX\nXXXXXXXXXX"
 gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Etat-> IO ()
 gameLoop frameRate renderer tmap smap kbd gameState= do
-  startTime <- time
   events <- pollEvents
-  let kbd' = K.handleEvents events kbd
-  clear renderer
-  --- display background
-  S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
-  --- display carte 
-  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte (carte_tour gameState) smap mapTiles)
-  mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromEnv gameState smap mapTiles)
-
-  present renderer
-  endTime <- time
-
+  currTime <- time
   let (gen,_) =split (gen_tour gameState)
-  --let (v,_) = randomR (1::Integer,10::Integer ) gen 
-  --putStrLn $ show v
-  let gameState' = etat_tour gameState kbd' endTime gen
-  --let gs@(Tour nt carte' et gt ot lgt) = gameState'
-  --let gameState' = M.gameStep gameState kbd' 
-  let kbd'' = K.createKeyboard
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap kbd'' gameState')
-
-
---test :: IO ()
---test = do
+  let kbd' = K.handleEvents events kbd
+  let gameState' = etat_tour gameState kbd' currTime gen
+  case change_etat gameState of
+    Tour nt ct et gt ot lgt -> do
+      clear renderer
+      S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
+      mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromCarte (carte_tour gameState) smap mapTiles)
+      mapM_ (S.displaySprite renderer tmap) (fetchSpritesFromEnv gameState smap mapTiles)
+      present renderer    
+    Perdu -> do
+      clear renderer
+      S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "lose") smap)
+      present renderer
+    Gagne -> do
+      clear renderer
+      S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "win") smap)
+      present renderer
+  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap  K.createKeyboard gameState')
 

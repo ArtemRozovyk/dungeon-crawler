@@ -17,6 +17,9 @@ carteTest1  = do
     it "est " $ do
       kart <- carteFromFile "exemple"
       (isTraversable kart 2 8) `shouldBe` True
+    it "est " $ do
+      kart <- carteFromFile "exemple"
+      (isTraversable kart 2 8) `shouldBe` True
 
 
 engineSpec = do

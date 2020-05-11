@@ -61,7 +61,7 @@ decide l m@(Model c env g lg k) ent cord =
 prevoit:: Modele -> Coord -> [(Int, Ordre)]
 prevoit m@(Model c e g _ _ ) crd@(C x y) = 
   let toLookUp = [(x+1,y),(x-1,y),(x,y-1),(x,y+1)] in --r l u d 
-  let cases = catMaybes $ L.map (\(cx,cy) -> (getCase2 c cx cy) ) toLookUp in 
+  let cases = catMaybes $ L.map (\(cx,cy) -> (getCaseCoord c cx cy) ) toLookUp in 
   let passable_carte = L.filter (\(_,(C ax by)) -> isTraversable c ax by ) cases in 
   let passable_env = L.filter (\(_,crd2) -> franchissable_env crd2 e False ) passable_carte in 
   let weights = getNRandom [1..4] (length passable_env) g False in 
@@ -70,7 +70,7 @@ prevoit m@(Model c e g _ _ ) crd@(C x y) =
   
 bouge :: Modele -> Entite -> Coord -> CDouble ->Modele
 bouge m ent@(Mob id hp st) coord time = 
-  if( (round(time - st) `mod` 3 == 0) && (time - st)-((fromIntegral $ round(time - st))::CDouble) <  0.01 ) -- a step every 2 seconds (normally)
+  if( (round(time - st) `mod` 3 == 0) && (time - st)-((fromIntegral $ round(time - st))::CDouble) <  0.01 ) -- a step every 3 seconds (normally)
     then decide (prevoit m coord) m ent{starting_time = st +2} coord
     else m
 
@@ -79,8 +79,7 @@ stepMobs m@(Model c e g l k ) time =
   let mobs = M.filter (\x -> isMob $ head x) (contenu_envi e) in --TODO multiple entit one case
   M.foldlWithKey (\md crd ent  -> (bouge md (head ent) crd) time) m mobs
 
-stepPlayer ::Modele -> Modele 
-stepPlayer m@(Model c e g l k ) = undefined
+
 
 openDoorGenerique :: Modele -> Coord -> Modele
 openDoorGenerique m@(Model c e g l k ) (C x1 y1) = 
@@ -122,13 +121,13 @@ interactObject m@(Model c e g l k ) crd@(C x y) =
     Just (Mob idMob hp timeMob) -> let enviNoHitMob = (rmv_coor_envi cordObject e) in 
       if(hp - 25 < 0)
         then Model c enviNoHitMob g l k --mob has died
-        else Model c (ajout_env (cordObject,(Mob idMob (hp-25) timeMob)) enviNoHitMob) g l k
+        else Model c (ajout_env (cordObject,(Mob idMob (hp-25) timeMob)) enviNoHitMob) g l k --placing back the mob that has been hurt
            
 interactObjectsEnvi :: Modele -> Modele 
 interactObjectsEnvi m =   L.foldl (\modele coord -> interactObject modele coord) m [(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)]
 
-gameStep :: Modele -> Keyboard -> Modele
-gameStep m kbd =
+stepPlayer :: Modele -> Keyboard -> Modele
+stepPlayer m kbd =
   let new_mo =if S.member KeycodeZ kbd then moveGenerique m (C 0 (-1))
               else if S.member KeycodeS kbd then moveGenerique m (C 0 1) 
               else if S.member KeycodeQ kbd then moveGenerique m (C (-1) 0)
@@ -138,63 +137,5 @@ gameStep m kbd =
               else m
     in
       new_mo
-
-
-{-
-data Etat = Perdu
-    | Gagne
-    | Tour {
-    num_tour :: Int,
-    carte_tour :: Carte,
-    envi_tour :: Envi,
-    gen_tour :: StdGen,
-    obj_tour :: (M.Map Int Entite),
-    log :: String}
-
-data GameState = GameState { persoX :: Int
-                           , persoY :: Int
-                           , virusX :: Int
-                           , virusY :: Int
-                           , speed :: Int }
-  deriving (Show)
-
-initGameState :: IO GameState
-initGameState = do
-    vX <- randomRIO(40,290)
-    vY <- randomRIO(40,290)
-    pure $ GameState 200 200 vX vY  3
-
-moveLeft :: GameState -> GameState
-moveLeft gs@(GameState px _ _ _ sp) | px > 0 = gs { persoX = px - sp }
-                                | otherwise = gs
-
-moveRight :: GameState -> GameState
-moveRight gs@(GameState px _ _ _ sp) | px < 320 = gs { persoX = px + sp }
-                                 | otherwise = gs
-                              
-moveUp :: GameState -> GameState
-moveUp gs@(GameState _ py _ _ sp) | py > 0 = gs { persoY = py - sp }
-                              | otherwise = gs
-
-moveDown :: GameState -> GameState
-moveDown gs@(GameState _ py _ _ sp) | py < 320 = gs { persoY = py + sp }
-                                | otherwise = gs
-gameStep :: RealFrac a => GameState -> Keyboard -> a -> GameState
-gameStep gstate kbd deltaTime =
-  -- A MODIFIFIER
-  let new_gs =if S.member KeycodeZ kbd then moveUp gstate
-              else if S.member KeycodeS kbd then moveDown gstate
-              else if S.member KeycodeQ kbd then moveLeft gstate
-              else if S.member KeycodeD kbd then moveRight gstate
-              else gstate
-    in
-      end_check new_gs
-
-end_check :: GameState -> GameState
-end_check gs@(GameState px py vx vy sp) = 
-  if(abs(px-vx)<50 && abs(py-vy)<50)
-  then GameState px py (-1) (-1) sp
-  else gs
--}
 
 
