@@ -18,12 +18,11 @@ Le points importants du travaill realisé:
 -Une action est choisie aléatoirement, en considerant les poids des actions. c.f. pickRandomWeighted:Model:127
 
 -Le mouvement (génération puis choix d'action puis mouvement) est fait toutes les 3 secondes en considerant le temps courrant. 
+(Important: les instant de départ de chaque mob sont differents, une valeur de cet instant leurs est associé à la création, ceci pour donner une impression des mobs ayant leur propre volonté)
 
-	(Important: les instant de départ de chaque mob sont differents, une valeur de cet instant leurs est associé à la création, ceci pour donner une
-	 impression des mobs ayant leur propre volonté)
 -Le joueur se déplace avec les touches Z S Q D pour les 4 directions et R pour frapper un mob ou prendre un objet.
 
--un mob frapé 4 fois meurt. 
+-un mob frapé 5 fois meurt. 
 
 -Les portes s'ouvrent avec la touche E 
 
