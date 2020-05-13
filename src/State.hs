@@ -29,7 +29,8 @@ data Etat = Perdu
 
 
 prop_state_inv :: Etat -> Bool 
-prop_state_inv e = True 
+prop_state_inv e@(Tour nt ct env gt ot lgt) = 
+    prop_state_inv1(e) && prop_state_inv2(e) && prop_state_inv3(e) && prop_state_inv4(e) && prop_inv_carte_saine(ct) && prop_envi_inv(env)
     --numTour est un entier poitif
     --Chaque coordonnée d'entite correspond à une case traversable
     --Les entités sont bien dans les limites de la carte 
@@ -37,13 +38,109 @@ prop_state_inv e = True
     --  entités dans une même case (parce que.) 
     --  
 
+prop_state_inv1 :: Etat -> Bool  --numTour est un entier naturel
+prop_state_inv1 etat@(Tour nt ct env gt ot lgt) =
+    nt>=0
+
+prop_state_inv2 :: Etat -> Bool --Chaque coordonnée d'entite correspond à une case traversable
+prop_state_inv2 etat@(Tour nt ct env gt ot lgt) =
+    let liste_ent = M.toAscList(contenu_envi env) in 
+        aux liste_ent ct
+        where
+        aux :: [(Coord,[Entite])] -> Carte -> Bool 
+        aux [] _ = True 
+        aux ((C x y,entites):xs) c = 
+            if entites /= [] 
+            then isTraversable c x y && aux xs c
+            else aux xs c
+
+prop_state_inv3 :: Etat -> Bool   --Les entités sont bien dans les limites de la carte 
+prop_state_inv3 etat@(Tour nt ct env gt ot lgt) =
+     let liste_ent = M.toAscList(contenu_envi env) in 
+        aux liste_ent ct
+        where
+        aux :: [(Coord,[Entite])] -> Carte -> Bool 
+        aux [] _ = True
+        aux ((C x y,entites):xs) c@(Carte l h carte_contenu) = 
+            if entites /= [] 
+            then x<l && y<h && aux xs c
+            else aux xs c
+
+prop_state_inv4 :: Etat -> Bool --Les mobs ne sont pas l'un sur l'autre (ni sur le joueur) pas de plusieurs entites dans une case
+prop_state_inv4 etat@(Tour nt ct env gt ot lgt) =
+     let liste_ent = M.toAscList(contenu_envi env) in 
+        aux liste_ent ct
+        where
+        aux :: [(Coord,[Entite])] -> Carte -> Bool 
+        aux [] _ = True 
+        aux ((C x y,entites):xs) c = 
+            if entites /= [] 
+            then isSeul entites && aux xs c
+            else aux xs c
+
 prop_pre_add_entity_state :: Etat -> Coord -> Entite-> Bool 
-prop_pre_add_entity_state e crd m = True 
-    --les coordonnés sont bien dans les limites des murs exerieurs 
-    --il n y a pas déjà un mob sur ces coordonnées
-    --le nombre mobs presents(+1) <= nb de cases libres / 2 
-    --on peut pas ajouter plus d'un joueur
-    --
+prop_pre_add_entity_state e crd m =
+    prop_pre_add_entity_state1 e crd m  && prop_pre_add_entity_state2 e crd m && prop_pre_add_entity_state3 e crd m && prop_pre_add_entity_state4 e crd m
+
+
+prop_pre_add_entity_state1 :: Etat -> Coord -> Entite-> Bool -- Les coordonnées sont comprises dans les limites de la carte
+prop_pre_add_entity_state1 e@(Tour nt ct@(Carte l h carte_contenu) env gt ot lgt) crd@(C x y) m = 
+    x>=1 && x<l && y>=1 && y<h
+
+prop_pre_add_entity_state2 :: Etat -> Coord -> Entite-> Bool -- Vérifie qu'il n'y a pas d'entités présente sur la case
+prop_pre_add_entity_state2 e@(Tour nt ct env gt ot lgt) crd@(C x y) m = 
+    case M.lookup (C x y) (contenu_envi env) of 
+        Nothing -> True
+        Just _ -> False
+
+nb_mobs :: [(Coord,[Entite])] -> Int 
+nb_mobs [] = 0
+nb_mobs ((C x y,entites):xs) = 
+    if entites /= [] 
+    then 1 + nb_mobs xs 
+    else nb_mobs xs  
+
+nb_cases_libres :: Carte -> Int 
+nb_cases_libres c@(Carte l h carte_contenu) =
+    let liste_cases = M.toAscList carte_contenu in 
+        aux liste_cases c
+        where 
+            aux :: [(Coord, Case)] -> Carte -> Int 
+            aux [] _ = 0
+            aux ((C x y, caase):xs) c = 
+                if isTraversable c x y
+                then 1 + aux xs c 
+                else aux xs c
+
+prop_pre_add_entity_state3 :: Etat -> Coord -> Entite -> Bool -- le nombre de mobs sur la carte ne peut pas depasser la moitié des cases vides de la carte(trop peuplé sinon)
+prop_pre_add_entity_state3 e@(Tour nt ct env gt ot lgt) crd@(C x y) m = 
+    let nb_mobs_p = (nb_mobs (M.toAscList(contenu_envi env))) + 1 in
+        let nb_cases = nb_cases_libres ct in
+            nb_mobs_p<(nb_cases `div` 2) 
+
+prop_pre_add_entity_state4 :: Etat -> Coord -> Entite -> Bool -- on ne peut pas ajouter plus d'un joueur 
+prop_pre_add_entity_state4 e@(Tour nt ct env gt ot lgt) crd@(C x y) m = 
+    if not (isPlayer(m))
+    then True 
+    else let liste_ent = M.toAscList(contenu_envi env) in 
+        aux liste_ent
+        where
+        aux :: [(Coord,[Entite])] -> Bool 
+        aux [] = True 
+        aux ((C x y,entites):xs) = 
+            if isPlayer(head entites)
+            then False
+            else aux xs 
+
+prop_post_add_entity_state :: Etat -> Coord -> Entite -> Bool --l'entite a bien été rajouté
+prop_post_add_entity_state e@(Tour nt ct env gt ot lgt) crd@(C x y) ent@(Mob id pv st) =
+    case M.lookup (C x y) (contenu_envi env) of
+        Nothing -> error "should not happend"
+        Just a -> let m@(Mob id1 pv1 st1) = (head a) in
+            (isMob(ent) && isMob(head a)) || (isPlayer(ent) && isPlayer(head a))
+
+
+    
 
 add_entity_state :: Etat -> Coord -> Entite -> Etat 
 add_entity_state s c e =
@@ -76,7 +173,7 @@ makeNEntities n gen moment =
 init_state :: Carte -> Int -> CDouble-> StdGen -> Etat -- (Envi, M.Map Int Entite )
 init_state carte n moment gen =
     let (gen',g) = split gen in
-    let entites = (Trap):(Treasure):(Treasure):(Treasure):(makeNEntities n g moment) in
+    let entites = (Trap):(Treasure):(makeNEntities n g moment) in
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
     let places = getNRandom  emptyCases (length entites) gen' True in
     let mbs= foldl (\e (c,m) ->  add_entity_state e c m) (empty_state carte gen') (zip (map (\(c,_)-> c) places) entites) in

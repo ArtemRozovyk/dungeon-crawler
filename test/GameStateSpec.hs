@@ -11,13 +11,13 @@ b) prop_pre_ajouteMob e m  soit True
 
 
 
-module StateSpec where
+module GameStateSpec where
 
 import qualified Data.Set as Set 
 
 import qualified Data.Sequence as Seq
 
-
+import Envi
 import Test.Hspec
 import Carte 
 import System.Random 
@@ -34,14 +34,20 @@ carte1 = read "XXXXXXXXXX\nX    | XSX\nX    X X-X\nXXXX X X X\nX    X X X\nX XXX
 
 gameState1 = initGameState carte1 (mkStdGen 40) (10.0::CDouble)
 
-carteTest1  = do
-  describe "Traversalbe" $ do
-    it "est " $ do
-      
-        --
-      kart <- carteFromFile "exemple"
-      (isTraversable kart 2 8) `shouldBe` True
+add_entity_state_test  = do
+  describe "Tests sur Game state" $ do
+    let mob = (Mob 1 100 30) 
+    let coord = (C 3 4) 
+    it "Game state saint " $ do
+      prop_state_inv gameState1 `shouldBe` True
+    it "Precondition add entity " $ do
+      prop_pre_add_entity_state gameState1 coord mob `shouldBe` True
+    it "Post condition add entity " $ do
+      let env_res = add_entity_state gameState1 coord mob
+      prop_post_add_entity_state env_res coord mob `shouldBe` True
+      prop_state_inv env_res `shouldBe` True
+
 
 
 engineSpec = do
-  carteTest1
+  add_entity_state_test

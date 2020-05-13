@@ -59,7 +59,7 @@ loadGeneric rdr path tmap smap l h  = do
 main :: IO ()
 main = do
   initializeAll
-  carte <-carteFromFile "exemple2"
+  carte <-carteFromFile "exemple"
   let (l,h)=((fromIntegral (cartel carte)*48),(fromIntegral(carteh carte)*48))
   let wSize = V2 l h
   window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = wSize}
