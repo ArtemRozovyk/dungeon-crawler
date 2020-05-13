@@ -30,6 +30,7 @@ Le points importants du travaill realisé:
 
 -On perd quand on marche sur le piege
 
+-Esc pour echapper
 
 
 
