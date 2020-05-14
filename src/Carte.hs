@@ -82,19 +82,16 @@ readCase (c:xs) | c ==' ' = [(Empty,xs)]
 instance Read Case where
     readsPrec _ = readCase
 
-readAux :: String -> Int -> Int -> [(Coord, Case)] -> (Carte, String)
-readAux [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases)))+1 , carte_contenu = M.fromDistinctDescList cases}, []) 
-readAux str line column acc = 
-    let result = (reads :: ReadS Case) str in
-        if result == []
-        then if (head str) == '\n'
-             then readAux (tail str) (line+1) 0 acc  
-             else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, str)  
-        else let [(caase , reste)] = result in
-            readAux reste line (column+1) ((C column line, caase):acc)    
+readCarte :: String -> Int -> Int -> [(Coord, Case)] -> (Carte, String)
+readCarte [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases)))+1 , carte_contenu = M.fromDistinctDescList cases}, []) 
+readCarte (hStr:tlStr) line column acc = 
+        case (reads :: ReadS Case) (hStr:tlStr) of 
+            []-> if hStr == '\n' then readCarte tlStr (line+1) 0 acc 
+                                 else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, (hStr:tlStr))
+            [(caase , reste)] -> readCarte reste line (column+1) ((C column line, caase):acc)
 
 instance Read Carte where
-    readsPrec _  = (\ str -> [readAux str 0 0 []])
+    readsPrec _  = (\ str -> [readCarte str 0 0 []])
 
 getCase :: Carte -> Int -> Int -> Maybe Case
 getCase (Carte _ _ cases) x y = M.lookup (C x y) cases
