@@ -56,10 +56,19 @@ loadGeneric rdr path tmap smap l h  = do
 
 
 
+isWin :: Etat -> Bool
+isWin Gagne = True 
+isWin _ = False
+
+
 main :: IO ()
 main = do
   initializeAll
-  carte <-carteFromFile "exemple3"
+  g <- getStdGen::IO StdGen 
+  carteToFile (carteVerifiee g) "carteGenerator3"
+  carte <-carteFromFile "carteGenerator3"
+  carte2 <- carteFromFile"exemple"
+  carte3 <- carteFromFile"exemple"
   let (l,h)=((fromIntegral (cartel carte)*48),(fromIntegral(carteh carte)*48))
   let wSize = V2 l h
   window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = wSize}
@@ -70,10 +79,12 @@ main = do
   gen  <- getStdGen::IO StdGen 
   moment <- time
   let gameState = initGameState carte gen moment
-  gameLoop 60 renderer tmap2 smap2 K.createKeyboard gameState
+  let gameState2 = initGameState carte2 gen moment
+  let gameState3 = initGameState carte3 gen moment
+  gameLoop 60 renderer tmap2 smap2 K.createKeyboard gameState 2 gameState2 gameState3
 carte1 = "XXXXXXXXXX\nX    | XSX\nX    X X-X\nXXXX X X X\nX    X X X\nX XXXX   X\nX    XXXXX\nX X    XXX\nXE  X  XXX\nXXXXXXXXXX"
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Etat-> IO ()
-gameLoop frameRate renderer tmap smap kbd gameState= do
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard  -> Etat-> Int -> Etat -> Etat -> IO ()
+gameLoop frameRate renderer tmap smap kbd gameState niv gameState2 gameState3 = do
   events <- pollEvents
   currTime <- time
   let (gen,_) =split (gen_tour gameState)
@@ -94,5 +105,6 @@ gameLoop frameRate renderer tmap smap kbd gameState= do
       clear renderer
       S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "win") smap)
       present renderer
-  unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap  K.createKeyboard gameState')
-
+  if isWin (change_etat gameState) && niv /=0 
+  then unless (K.keypressed KeycodeEscape kbd' || niv == 0) (gameLoop frameRate renderer tmap smap  K.createKeyboard gameState2 (niv-1) gameState3 gameState3)
+  else unless (K.keypressed KeycodeEscape kbd') (gameLoop frameRate renderer tmap smap  K.createKeyboard gameState' niv gameState2 gameState3)

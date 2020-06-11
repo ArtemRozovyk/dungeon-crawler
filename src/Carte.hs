@@ -1,41 +1,57 @@
 module Carte where 
+
 import System.IO
+
 import qualified Data.Map.Strict as M
 import SpriteMap (SpriteMap, SpriteId (..))
 import qualified SpriteMap as SM
+
 import Control.Monad (guard)
 import Control.Concurrent (threadDelay)
+import System.Random
+
 import Data.Set (Set)
 import qualified Data.Set as Set
+
 import Data.List (foldl',find)
+
 import Foreign.C.Types (CInt (..) )
+
 import SDL
 import SDL.Time (time, delay)
 import Linear (V4(..))
+
 import TextureMap (TextureMap, TextureId (..))
 import qualified TextureMap as TM
+
 import Sprite (Sprite)
 import qualified Sprite as S
+
 import SpriteMap (SpriteMap, SpriteId (..))
 import qualified SpriteMap as SM
+
 import Keyboard (Keyboard)
 import qualified Keyboard as K
+
 import qualified Debug.Trace as T
 
 
-data PDirection = NS | EO deriving Eq 
-data StatutP = Ouverte | Fermee deriving Eq 
-data Case = Empty
-    | Porte PDirection StatutP 
-    | Mur 
-    | Entree 
-    | Sortie 
+
+
+
+data PDirection = NS | EO deriving Eq -- direction d’une porte
+data StatutP = Ouverte | Fermee deriving Eq -- statut d’une porte
+data Case = Empty -- une case vide
+    | Porte PDirection StatutP -- une porte ouverte ou fermee
+    | Mur -- infranchissable (sauf pour les fantomes ...)
+    | Entree -- debut du niveau
+    | Sortie -- fin du niveau
     deriving Eq
 
 data Coord = C {cx :: Int , cy :: Int} deriving (Eq,Show)
-data Carte = Carte { cartel :: Int , 
-                     carteh :: Int ,
-                     carte_contenu :: (M.Map Coord Case)} 
+data Carte = Carte { cartel :: Int , -- largeur
+                     carteh :: Int , -- hauteur
+                     carte_contenu :: (M.Map Coord Case)} -- cases de la carte
 
 instance Ord Coord where
     (C x1 y1) <= (C x2 y2) = 
@@ -66,6 +82,7 @@ showCarte (Carte largeur hauteur content) =
 instance Show Carte where
     show = showCarte
 
+
 readCase :: String -> [(Case, String)]
 readCase [] = []
 readCase (c:xs) | c ==' ' = [(Empty,xs)]
@@ -82,19 +99,22 @@ readCase (c:xs) | c ==' ' = [(Empty,xs)]
 instance Read Case where
     readsPrec _ = readCase
 
+
 readCarte :: String -> Int -> Int -> [(Coord, Case)] -> (Carte, String)
-readCarte [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases)))+1 , carte_contenu = M.fromDistinctDescList cases}, []) 
-readCarte (hStr:tlStr) line column acc = 
+readCarte [] haut larg cases = (Carte {carteh = haut+1, cartel = (cx (fst (head cases)))+1 , carte_contenu = M.fromDistinctDescList cases}, [])
+readCarte (hStr:tlStr) line column acc =
         case (reads :: ReadS Case) (hStr:tlStr) of 
-            []-> if hStr == '\n' then readCarte tlStr (line+1) 0 acc 
+            []-> if hStr == '\n' then readCarte tlStr (line+1) 0 acc
                                  else (Carte {carteh = line, cartel = (cx (fst (last acc))) + 1, carte_contenu = M.fromDistinctDescList acc}, (hStr:tlStr))
             [(caase , reste)] -> readCarte reste line (column+1) ((C column line, caase):acc)
+
 
 instance Read Carte where
     readsPrec _  = (\ str -> [readCarte str 0 0 []])
 
 getCase :: Carte -> Int -> Int -> Maybe Case
 getCase (Carte _ _ cases) x y = M.lookup (C x y) cases
+
 
 getCaseCoord :: Carte -> Int -> Int -> Maybe (Case,Coord)
 getCaseCoord (Carte _ _ cases) x y = 
@@ -121,6 +141,7 @@ getSortieCoord (Carte larg haut cases) =
         Nothing -> error "There is no Exit"
         Just(crd, _)-> crd
 
+
 carteFromFile :: FilePath -> IO Carte
 carteFromFile file = do 
     fd <- openFile file ReadMode
@@ -131,6 +152,76 @@ carteToFile :: Carte -> FilePath -> IO ()
 carteToFile carte file = do 
     writeFile file (show carte)
     return ()
+
+caseSuivante :: (Int -> Int -> Int -> [(Coord,Case)]) -> Int -> Int -> Int -> [(Coord,Case)]
+caseSuivante aux i j c = 
+    if i == 14
+            then if j == 14
+                then []
+                else  aux 0 (j+1) c
+            else aux (i+1) j c
+
+
+
+carteGenerator :: Int -> Carte 
+carteGenerator c = 
+    let larg = 14 in
+    let haut = 14 in 
+    Carte larg haut (M.fromList (aux 0 0 c)) 
+    where
+        aux :: Int -> Int -> Int -> [(Coord,Case)]
+        aux 0 j c = let nouv_case = Mur in            --Bordure
+                [(C 0 j,nouv_case)] <> caseSuivante aux 0 j c
+        aux 14 j c = let nouv_case = Mur in
+                [(C 14 j,nouv_case)] <> caseSuivante aux 14 j c
+        aux i 0 c = let nouv_case = Mur in
+                [(C i 0,nouv_case)] <> caseSuivante aux i 0 c
+        aux i 14 c = let nouv_case = Mur in                       --Bordure
+                [(C i 14,nouv_case)] <> caseSuivante aux i 14 c
+        aux i j c = let a = (mod c 13) + 1 in               --Emplacement de l'entree/sortie/porte
+                    let d = (mod c 2) + 11 in              --Emplacement du premier mur
+                    let f = (mod c 7) + 3 in
+                    if j == d || j == f                   --Si il s'agit d'un mur horizontal
+                    then if i == a && j == d
+                        then let nouv_case = Porte NS Fermee in 
+                        [(C i j,nouv_case)] <> caseSuivante aux i j c 
+                        else if i == (mod (a+7) 13 ) + 1 && j == f
+                            then let nouv_case = Porte NS Fermee in 
+                             [(C i j,nouv_case)] <> caseSuivante aux i j c
+                            else let nouv_case = Mur in 
+                            [(C i j,nouv_case)] <> caseSuivante aux i j c 
+                    else if ((i == (mod (a+4) 13 ) + 1) && j>f && j< d ) || ((i ==  (mod (a+10) 13 ) + 1) && j>0 && j<(max 9 f) )    -- Si il s'agit d'un mur vertical
+                        then if j == 10 || j == (f-2)
+                            then let nouv_case = Porte EO Fermee in 
+                                [(C i j,nouv_case)] <> caseSuivante aux i j c
+                            else let nouv_case = Mur in 
+                                [(C i j,nouv_case)] <> caseSuivante aux i j c                        
+                        else  if j == 13 && i == (mod (a+8) 13 ) + 1    --Si il ne s'agit pas d'un mur
+                            then let nouv_case = Entree in 
+                            [(C i j,nouv_case)] <> caseSuivante aux i j c
+                            else if j == 1 && i == a
+                                then let nouv_case = Sortie in 
+                                [(C i j,nouv_case)] <> caseSuivante aux i j c
+                                else let nouv_case = Empty in 
+                                [(C i j,nouv_case)] <> caseSuivante aux i j c 
+                        
+
+carteVerifiee :: StdGen -> Carte 
+carteVerifiee g =
+    let c = randomRs (150, 200) g  in
+    let maCarte = carteGenerator (head c) in 
+    aux 0 maCarte 
+    where 
+        aux :: Int -> Carte -> Carte 
+        aux 10 _ = error "Cela fait 10 tours que la carte n'est pas saine" 
+        aux i maCarte = 
+            if prop_inv_carte_saine maCarte 
+            --if True
+            then maCarte 
+            else let c = randomRs (150, 200) g  in
+                aux (i+1) (carteGenerator (head c))
+ 
+
 
 fetchSingleSprite :: Maybe String -> SpriteMap -> Int ->Int -> Sprite
 fetchSingleSprite Nothing _ _ _ = error "Passed Nothing fetchSingleSprite"
@@ -150,14 +241,14 @@ prop_inv_carte_saine c =
     prop_carte1 c && prop_carte2 c  && prop_carte3 c && prop_carte4 c && prop_carte5 c && prop_carte6 c 
 
 -- Invariants
-prop_carte1:: Carte -> Bool  --Vérifie que toutes les cases soient bien comprisent entre la hauteur et la largeur
+prop_carte1:: Carte -> Bool --Vérifie que toutes les cases soient bien comprisent entre la hauteur et la largeur
 prop_carte1 (Carte larg haut cases) = 
     let list_cases = M.toAscList cases in 
         aux list_cases
     where
         aux [] = True 
         aux ((C x y, caase):xs) =
-            if x > (larg-1) || y > (haut-1) 
+            if x > larg || y > haut 
             then False 
             else aux xs
 
@@ -170,9 +261,8 @@ aux2 (Carte l h cases) y x = case M.lookup (C y x) cases of
                                          Nothing -> False
                                          Just a -> True &&  aux2 (Carte l h cases) y (x-1)
 
-prop_carte2:: Carte -> Bool -- chaque case de la grille contient quelque chose 
-prop_carte2 (Carte larg2 haut2 cases) =
-    let (haut,larg)=(haut2-1,larg2-1) in
+prop_carte2:: Carte -> Bool 
+prop_carte2 (Carte larg haut cases) =
     aux1 (Carte larg haut cases) larg haut haut
     where
         aux1 :: Carte -> Int -> Int -> Int -> Bool 
@@ -180,7 +270,7 @@ prop_carte2 (Carte larg2 haut2 cases) =
         aux1 (Carte larg haut cases) lard hautd y = aux2 (Carte larg haut cases) y larg && aux1 (Carte larg haut cases) lard hautd (y-1) 
 
 
-prop_carte3 :: Carte -> Bool  -- il y a une unique entree et unique sortie
+prop_carte3 :: Carte -> Bool 
 prop_carte3 (Carte larg haut cases) =
     let list_cases = M.toAscList cases in 
         aux1 list_cases 0 0
@@ -196,10 +286,10 @@ prop_carte3 (Carte larg haut cases) =
                 Sortie -> aux1 xs nbE (nbS + 1)
                 otherwise -> aux1 xs nbE nbS
 
-prop_carte4 :: Carte -> Bool -- Elle est entièrement entouré des murs 
+prop_carte4 :: Carte -> Bool
 prop_carte4 (Carte larg haut cases) =
     let list_cases = M.toAscList cases in 
-        aux1 list_cases (larg-1) (haut-1)
+        aux1 list_cases larg haut
     where
         aux1 :: [(Coord, Case)]  -> Int -> Int -> Bool
         aux1 [] _ _ = True
@@ -211,7 +301,7 @@ prop_carte4 (Carte larg haut cases) =
                 then False 
                 else aux1 xs larg haut 
 
-prop_carte5 :: Carte -> Bool --Chaque porte est encadre des murs
+prop_carte5 :: Carte -> Bool
 prop_carte5 (Carte larg haut cases) =
     let list_cases = M.toAscList cases in 
         aux1 (Carte larg haut cases) list_cases 
@@ -257,7 +347,7 @@ appartient (C x1 y1, caase1) ((C x y, caase):xs) = if x == x1 && y == y1
                                                         then False 
                                                         else appartient (C x1 y1, caase1) xs
 
-prop_carte6 :: Carte -> Bool --La sortie est accesible depuis l'entree 
+prop_carte6 :: Carte -> Bool
 prop_carte6 (Carte larg haut cases) =
     aux1 (Carte larg haut cases) [] [getEntreeCase (Carte larg haut cases)]
     where
@@ -291,4 +381,3 @@ prop_carte6 (Carte larg haut cases) =
                                                                                             then let xss = ([(C x4 y4, e4)]<>xs) in
                                                                                                 aux1 (Carte larg haut cases) (v<>[(C x y, caase)]) (xss<>[(C x y, caase)]) 
                                                                                             else aux1 (Carte larg haut cases) ([(C x y, caase)]<>v) xs 
-
