@@ -34,9 +34,37 @@ prop_modele_inv_spec :: Property
 prop_modele_inv_spec = forAll (arbitrary::Gen Modele) $ prop_modele_inv
 
 
+prop_modele_inv_spec2 :: Property 
+prop_modele_inv_spec2 = forAll (arbitrary::Gen Modele) $ prop_modele_inv1
+
+prop_modele_inv_spec3 :: Property 
+prop_modele_inv_spec3 = forAll (arbitrary::Gen Modele) $ prop_modele_inv2
+
+prop_modele_inv_spec4 :: Property 
+prop_modele_inv_spec4 = forAll (arbitrary::Gen Modele) $ prop_modele_inv4
+
 prop_genModele_inv = do
   describe "genTestCarte_QuickCheck" $ do
-    it "genere les cartes satisfiant leur invariant" $ 
+    it " invariant" $ 
       property prop_modele_inv_spec
+
+
+prop_genModele_inv2 = do
+  describe "prop_genModele_inv2" $ do
+    it  "invariant" $ 
+      property prop_modele_inv_spec2
+
+
+prop_genModele_inv3 = do
+  describe "prop_genModele_inv3" $ do
+    it " invariant" $ 
+      property prop_modele_inv_spec3
+
+
+prop_genModele_inv4 = do
+  describe "prop_genModele_inv4" $ do
+    it " invariant" $ 
+      property prop_modele_inv_spec4
+
 
 

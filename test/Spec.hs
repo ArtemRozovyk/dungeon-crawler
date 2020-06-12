@@ -21,4 +21,7 @@ main = hspec $ do
   QCC.genCarteSpec
   QCS.genStateSpec
   QCS.addEntitySpec
-  QCM.prop_genModele_inv
+  QCM.prop_genModele_inv2
+  QCM.prop_genModele_inv3
+  QCM.prop_genModele_inv4
+  
