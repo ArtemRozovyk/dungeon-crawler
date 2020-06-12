@@ -24,7 +24,7 @@ data Modele = Model {
 
 
 instance Show Modele where 
-  show m = show $envi m 
+  show m = (show $envi m ) <> (show $ carte m) 
 
 prop_modele_inv :: Modele -> Bool
 prop_modele_inv m@(Model ct env g lgt kbd) =
