@@ -21,6 +21,11 @@ data Modele = Model {
   log_m :: String , 
   keyboard :: Keyboard }
 
+
+
+instance Show Modele where 
+  show m = show $envi m 
+
 prop_modele_inv :: Modele -> Bool
 prop_modele_inv m@(Model ct env g lgt kbd) =
   prop_modele_inv1 m && prop_modele_inv2 m  && prop_inv_carte_saine ct && prop_envi_inv env && prop_modele_inv4 m
@@ -188,7 +193,7 @@ post_openDoor m c = undefined --verifier la que la porte est bien ouverte (s'il 
 
 
 pre_moveGenerique :: Modele -> Coord -> Bool --On vérifie si les coordonnés sont toujours sur la carte
-pre_moveGenerique m@(Model c@(Carte l h contenu_carte) e g lg k ) (C x1 y1) =   --ATTENTION -> La case n'est pas vérifiée frnachissbale car le cas est traité par la fonction moveGenerique (Le joueur n'avance pas)
+pre_moveGenerique m@(Model c@(Carte l h contenu_carte) e g lg k ) (C x1 y1) =   
   let (C x y, entites) = getPlayer e in
   let (C x2 y2) = C (x+x1) (y+y1) in
      isTraversable c x2 y2 && franchissable_env (C x2 y2) e True && (x2 < l) && (y2 < h) && (x2 > 0) && (y2 > 0)

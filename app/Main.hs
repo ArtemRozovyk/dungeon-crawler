@@ -65,7 +65,7 @@ main :: IO ()
 main = do
   initializeAll
   g <- getStdGen::IO StdGen 
-  carteToFile (carteVerifiee g) "carteGenerator3"
+  carteToFile (generateCarteVerified g) "carteGenerator3"
   carte <-carteFromFile "carteGenerator3"
   carte2 <- carteFromFile"exemple"
   carte3 <- carteFromFile"exemple"

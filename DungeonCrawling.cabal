@@ -74,6 +74,9 @@ test-suite DungeonCrawling-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      QuickCheckModel
+      QuickCheckState
+      QuickCheckCarte
       CarteSpec
       Paths_DungeonCrawling
       GameStateSpec
@@ -86,6 +89,7 @@ test-suite DungeonCrawling-test
       base >=4.7 && <5
     , containers
     , hspec
+    , QuickCheck
     , text
     , linear
     , DungeonCrawling

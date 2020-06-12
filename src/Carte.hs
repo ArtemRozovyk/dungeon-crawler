@@ -206,8 +206,8 @@ carteGenerator c =
                                 [(C i j,nouv_case)] <> caseSuivante aux i j c 
                         
 
-carteVerifiee :: StdGen -> Carte 
-carteVerifiee g =
+generateCarteVerified :: StdGen -> Carte 
+generateCarteVerified g =
     let c = randomRs (150, 200) g  in
     let maCarte = carteGenerator (head c) in 
     aux 0 maCarte 
@@ -263,7 +263,7 @@ aux2 (Carte l h cases) y x = case M.lookup (C y x) cases of
 
 prop_carte2:: Carte -> Bool 
 prop_carte2 (Carte larg haut cases) =
-    aux1 (Carte larg haut cases) larg haut haut
+    aux1 (Carte (larg-1) (haut-1) cases) (larg-1) (haut-1) (haut-1)
     where
         aux1 :: Carte -> Int -> Int -> Int -> Bool 
         aux1 (Carte larg haut cases) lard hautd 0 = aux2 (Carte larg haut cases) 0 larg

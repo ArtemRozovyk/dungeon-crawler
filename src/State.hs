@@ -27,6 +27,10 @@ data Etat = Perdu
     log :: String}
 
 
+instance Show Etat where
+    show e = show $carte_tour e
+
+
 
 prop_state_inv :: Etat -> Bool 
 prop_state_inv e@(Tour nt ct env gt ot lgt) = 

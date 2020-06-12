@@ -6,6 +6,9 @@ import Envi
 import EnviSpec as ES
 import Model
 import ModeleSpec as MS
+import QuickCheckCarte as QCC
+import QuickCheckState as QCS
+import QuickCheckModel as QCM
 
 
 main :: IO ()
@@ -15,3 +18,7 @@ main = hspec $ do
   SS.add_entity_state_test
   ES.engineSpec
   MS.engineSpec
+  QCC.genCarteSpec
+  QCS.genStateSpec
+  QCS.addEntitySpec
+  QCM.prop_genModele_inv
