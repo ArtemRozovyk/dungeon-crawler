@@ -5,10 +5,11 @@ module QuickCheckState where
 import Test.Hspec
 import Test.QuickCheck
 
-import QuickCheckCarte
 import State
 import Carte
 import Envi
+import QuickCheckCarte 
+
 import qualified Data.Map.Strict as M
 
 import System.Random

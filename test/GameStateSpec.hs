@@ -38,7 +38,7 @@ add_entity_state_test  = do
   describe "Tests sur Game state" $ do
     let mob = (Mob 1 100 30) 
     let coord = (C 3 4) 
-    it "Game state saint " $ do
+    it "Game state invariant " $ do
       prop_state_inv gameState1 `shouldBe` True
     it "Precondition add entity " $ do
       prop_pre_add_entity_state gameState1 coord mob `shouldBe` True

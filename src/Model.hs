@@ -144,8 +144,17 @@ decide l m@(Model c env g lg k) ent cord =
     Model c (Envi movedEnv) g lg k
   
 
-post_prevoit:: Modele -> Coord -> Bool 
-post_prevoit m c = undefined --il y a bien des action proposés (dans une situation correcte)
+post_prevoit:: Modele -> Coord -> Bool --il y a bien des action proposés (dans une situation correcte)
+post_prevoit m@(Model c e g _ _ ) crd@(C x y) = 
+  let toLookUp = [(x+1,y),(x-1,y),(x,y-1),(x,y+1)] in --r l u d 
+  let cases = catMaybes $ L.map (\(cx,cy) -> (getCaseCoord c cx cy) ) toLookUp in 
+  let passable_carte = L.filter (\(_,(C ax by)) -> isTraversable c ax by ) cases in 
+  let passable_env = L.filter (\(_,crd2) -> franchissable_env crd2 e False ) passable_carte in 
+  if passable_env == []
+  then True 
+  else if L.null (prevoit m crd)
+        then False 
+        else True 
 
 --see through map and envi where i can go
 prevoit:: Modele -> Coord -> [(Int, Ordre)]
@@ -188,9 +197,15 @@ openDoorGenerique m@(Model c e g l k ) (C x1 y1) =
                       Model (Carte (cartel c) (carteh c) movedCar) e g l k
     else m 
 
-post_openDoor :: Modele -> Coord ->Bool
-post_openDoor m c = undefined --verifier la que la porte est bien ouverte (s'il y a une porte)
-
+post_openDoor :: Modele -> Coord ->Bool --verifie que si une porte était présente, elle est maintenant ouverte
+post_openDoor m@(Model c e g l k ) (C x1 y1) = 
+  let players = M.filter (\x -> isPlayer $ head x) (contenu_envi e) in
+  let liste = M.toAscList(players) in 
+  let (C x y, ent) = head liste in
+  let a = fromJust $ getCase c (x+x1) (y+y1) in
+  if a == Porte EO Fermee || a == Porte NS Fermee
+  then False 
+  else True
 
 pre_moveGenerique :: Modele -> Coord -> Bool --On vérifie si les coordonnés sont toujours sur la carte
 pre_moveGenerique m@(Model c@(Carte l h contenu_carte) e g lg k ) (C x1 y1) =   
@@ -237,9 +252,17 @@ interactObject m@(Model c e g l k ) crd@(C x y) =
     Just Trap -> Model c (ajout_env ((C x1 y1),(Player idpla pvie hasTresure True) )e) g l k      --Désamorcage
     Just _ -> m 
 
-post_interact_object ::  Modele -> Coord ->Entite -> Bool 
-post_interact_object m c = undefined -- on a bien intéragit avec l'objet : pas de tresor ou mob blessé. 
-
+post_interact_object ::  Modele -> Coord ->Entite -> Bool -- on a bien intéragit avec l'objet : pas de tresor ou mob blessé. 
+post_interact_object m@(Model c e g l k ) crd@(C x y) ent = 
+  let (C x1 y1, ent) = getPlayer e  in 
+  let cordObject =  C (x1+x) (y1+y) in 
+  case trouve_env_Cord e cordObject of 
+    Nothing -> True 
+    Just Treasure -> False 
+    Just (Mob idMob hp timeMob) ->  if hp >= 100
+        then False
+        else True
+    Just _ -> True
 interactObjectsEnvi :: Modele -> Modele 
 interactObjectsEnvi m =   L.foldl (\modele coord -> interactObject modele coord) m [(C (-1) 0),(C 1 0),(C 0 (-1)),(C 0 1)]
 

@@ -30,7 +30,7 @@ model1 = Model carte1 envi2 (mkStdGen 40) "" kdb1
 modTest1  = do
   
   describe "Tests modele" $ do
-    it "Model saint" $ do
+    it "Model invariant" $ do
       prop_modele_inv model1 `shouldBe` True
     it "pre_moveGenerique" $ do
       pre_moveGenerique model1 (C 1 0) `shouldBe` True

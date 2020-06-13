@@ -65,10 +65,10 @@ main :: IO ()
 main = do
   initializeAll
   g <- getStdGen::IO StdGen 
-  carteToFile (generateCarteVerified g) "carteGenerator3"
+  carteToFile (generateCarteVerified g) "carteGenerator3" 
   carte <-carteFromFile "carteGenerator3"
-  carte2 <- carteFromFile"exemple"
-  carte3 <- carteFromFile"exemple"
+  carte2 <- carteFromFile "exemple2"
+  carte3 <- carteFromFile "exemple3"
   let (l,h)=((fromIntegral (cartel carte)*48),(fromIntegral(carteh carte)*48))
   let wSize = V2 l h
   window <- createWindow "Franchir l'Oubliette" $ defaultWindow { windowInitialSize = wSize}
