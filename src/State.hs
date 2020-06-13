@@ -164,7 +164,7 @@ change_etat :: Etat -> Etat
 change_etat etat@(Tour nt ct env gt ot lgt) =
     let (crdPlayer,player) = getPlayer env in 
         let crdSortie = getSortieCoord ct in
-           -- if (not $ trapIsPresent env) then Perdu else 
+            if (not $ trapIsPresent env)&& (not $ trapImmune (head  player))then Perdu else 
             if (hasTreasure $ head  player) && crdPlayer == crdSortie then Gagne 
             else Tour nt ct env gt ot lgt
 
@@ -181,7 +181,7 @@ init_state carte n moment gen =
     let emptyCases =  filter (\(_,c)-> c == Empty ) (M.toList $ carte_contenu carte) in 
     let places = getNRandom  emptyCases (length entites) gen' True in
     let mbs= foldl (\e (c,m) ->  add_entity_state e c m) (empty_state carte gen') (zip (map (\(c,_)-> c) places) entites) in
-        let player = [Player 42 100 False] in
+        let player = [Player 42 100 False False] in
         mbs {envi_tour = Envi $ M.insert (getEntreeCoord carte) player (contenu_envi (envi_tour mbs)),
         obj_tour = M.insert 42 (head player) (obj_tour mbs)} 
 

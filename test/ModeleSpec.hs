@@ -19,7 +19,7 @@ import Control.Exception (evaluate)
 carte1 = read "XXXXXXXXXX\nX    | XSX\nX    X X-X\nXXXX X X X\nX    X X X\nX XXXX   X\nX    XXXXX\nX X    XXX\nXE  X  XXX\nXXXXXXXXXX" ::Carte
 envi1 = Envi M.empty
 envi3 = ajout_env (C 2 2, (Treasure)) envi1
-envi2 = ajout_env (C 2 8, (Player 2 100 False)) envi3
+envi2 = ajout_env (C 2 8, (Player 2 100 False False)) envi3
 
 kdb1 = K.createKeyboard
 

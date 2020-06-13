@@ -6,7 +6,7 @@ import System.Random
 import Foreign.C.Types (CInt, CDouble (..) )
 import Data.Maybe
 data Entite = Mob {iden :: Int , pvie :: Int, starting_time :: CDouble  }
-    | Player {iden :: Int, pvie :: Int, hasTreasure ::Bool} | Treasure | Trap 
+    | Player {iden :: Int, pvie :: Int, hasTreasure ::Bool, trapImmune :: Bool} | Treasure | Trap 
     deriving (Eq)
 
 data Envi = Envi { contenu_envi :: M.Map Coord [ Entite ]} deriving (Show)
@@ -14,13 +14,13 @@ data Envi = Envi { contenu_envi :: M.Map Coord [ Entite ]} deriving (Show)
 
 instance Show Entite where 
     show (Mob _ _ _) ="m"
-    show (Player _ _ _) = "p"
+    show (Player _ _ _ _) = "p"
     show Treasure  = "t"
     show Trap  = "T"
 
 
 isPlayer :: Entite -> Bool 
-isPlayer (Player _ _ _ ) = True
+isPlayer (Player _ _ _ _) = True
 isPlayer _ = False
 
 isSeul :: [Entite] -> Bool

@@ -224,18 +224,17 @@ pre_interact_object m c = undefined -- il y a bien un objet
 
 interactObject :: Modele -> Coord -> Modele
 interactObject m@(Model c e g l k ) crd@(C x y) =
-  let (C x1 y1, ent) = getPlayer e  in 
+  let (C x1 y1, [ent@(Player idpla pvie hasTresure trapImmune)]) = getPlayer e  in 
   let cordObject =  C (x1+x) (y1+y) in case trouve_env_Cord e cordObject of 
     Nothing -> m 
     Just Treasure -> let trPlLess =  (rmv_coor_envi (C x1 y1) (rmv_coor_envi cordObject e))  in
-                let updatedPlayer =  ajout_env (C x1 y1, (head ent){hasTreasure=True}) trPlLess in 
+                let updatedPlayer =  ajout_env (C x1 y1,  ent{hasTreasure=True}) trPlLess in 
                 Model c updatedPlayer g l k 
     Just (Mob idMob hp timeMob) -> let enviNoHitMob = (rmv_coor_envi cordObject e) in 
       if(hp - 25 < 0)
         then Model c enviNoHitMob g l k --mob has died
         else Model c (ajout_env (cordObject,(Mob idMob (hp-25) timeMob)) enviNoHitMob) g l k --placing back the mob that has been hurt
-    Just Trap -> let enviNoTrap = (rmv_coor_envi cordObject e) in  --Désamorcage
-      Model c enviNoTrap g l k
+    Just Trap -> Model c (ajout_env ((C x1 y1),(Player idpla pvie hasTresure True) )e) g l k      --Désamorcage
     Just _ -> m 
 
 post_interact_object ::  Modele -> Coord ->Entite -> Bool 
