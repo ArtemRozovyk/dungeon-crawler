@@ -164,7 +164,7 @@ change_etat :: Etat -> Etat
 change_etat etat@(Tour nt ct env gt ot lgt) =
     let (crdPlayer,player) = getPlayer env in 
         let crdSortie = getSortieCoord ct in
-            if (not $ trapIsPresent env) then Perdu else 
+           -- if (not $ trapIsPresent env) then Perdu else 
             if (hasTreasure $ head  player) && crdPlayer == crdSortie then Gagne 
             else Tour nt ct env gt ot lgt
 

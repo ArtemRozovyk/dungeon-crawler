@@ -234,6 +234,8 @@ interactObject m@(Model c e g l k ) crd@(C x y) =
       if(hp - 25 < 0)
         then Model c enviNoHitMob g l k --mob has died
         else Model c (ajout_env (cordObject,(Mob idMob (hp-25) timeMob)) enviNoHitMob) g l k --placing back the mob that has been hurt
+    Just Trap -> let enviNoTrap = (rmv_coor_envi cordObject e) in  --Désamorcage
+      Model c enviNoTrap g l k
     Just _ -> m 
 
 post_interact_object ::  Modele -> Coord ->Entite -> Bool 
