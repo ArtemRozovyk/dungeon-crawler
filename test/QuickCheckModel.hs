@@ -22,12 +22,11 @@ import qualified Keyboard as K
 
 instance Arbitrary Modele where 
     arbitrary = do 
-        carte <-  (arbitrary :: Gen Carte)
         etat <- (arbitrary :: Gen Etat)
         let envi = envi_tour etat 
         seed <- choose (0, 1000)
         let gen = mkStdGen seed in 
-         return  (Model carte envi gen "" K.createKeyboard)
+         return  (Model (carte_tour etat) envi gen "" K.createKeyboard)
 
 
 prop_modele_inv_spec :: Property 

@@ -33,7 +33,7 @@ instance Arbitrary Carte where
 instance Arbitrary Coord where
     arbitrary =  do
         x <- choose (1,10)
-        y <- choose (0,10)
+        y <- choose (1,10)
         return (C x y)
 
 prop_genCarte_inv :: Property 
