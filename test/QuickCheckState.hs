@@ -68,8 +68,3 @@ addEntitySpec = do
     it "L'ajout arbitraire d'entite est verifié" $
       property prop_add_entity 
 
-
----prop_state_inv :: Etat -> Bool 
-
---prop_pre_add_entity_state :: Etat -> Coord -> Entite-> Bool 
---prop_post_add_entity_state :: Etat -> Coord -> Entite -> Bool --l'entite a bien été rajouté
