@@ -1,8 +1,6 @@
 # DungeonCrawling
 
 
-Les INVARIANTS sont décrits dans le fichier "invariants.txt"
-
 Dependencies :
 ```bash
 sudo apt-get update 
